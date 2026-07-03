@@ -1,0 +1,437 @@
+openapi: 3.0.3
+info:
+  title: Shift Planner API
+  version: 1.0.0
+  description: |
+    OpenAPI definition for Shift Planner API.
+servers:
+  - url: /
+security:
+  - bearerAuth: []
+paths:
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate user
+      description: Authenticates a user and returns a token.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+
+  /api/staff:
+    get:
+      tags: [Staff]
+      summary: List staff members
+      description: Retrieves a list of all staff members.
+      responses:
+        '200':
+          description: List of staff members retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Staff'
+        '401':
+          description: Invalid credentials
+    post:
+      tags: [Staff]
+      summary: Add staff member
+      description: Adds a new staff member to the system.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffUpsertRequest'
+      responses:
+        '201':
+          description: Staff member added successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Staff'
+        '400':
+          description: Invalid input data
+        '401':
+          description: Invalid credentials
+
+  /api/staff/{staffId}:
+    parameters:
+      - $ref: '#/components/parameters/staffId'
+    put:
+      tags: [Staff]
+      summary: Update staff member
+      description: Edits an existing staff member's information.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffUpsertRequest'
+      responses:
+        '200':
+          description: Staff member updated successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Staff'
+        '400':
+          description: Invalid input data
+        '401':
+          description: Invalid credentials
+        '404':
+          description: Staff member not found
+    delete:
+      tags: [Staff]
+      summary: Delete staff member
+      description: Deletes a staff member from the system.
+      responses:
+        '200':
+          description: Staff member deleted successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Staff'
+        '401':
+          description: Invalid credentials
+        '404':
+          description: Staff member not found
+
+  /api/policies:
+    get:
+      tags: [Policies]
+      summary: List scheduling policies
+      description: Retrieves the current scheduling policies.
+      responses:
+        '200':
+          description: Scheduling policies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Policy'
+        '401':
+          description: Invalid credentials
+
+  /api/policies/{policyId}:
+    parameters:
+      - $ref: '#/components/parameters/policyId'
+    put:
+      tags: [Policies]
+      summary: Update scheduling policy
+      description: Updates an existing scheduling policy.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyUpdateRequest'
+      responses:
+        '200':
+          description: Scheduling policy updated successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Policy'
+        '400':
+          description: Invalid input data
+        '401':
+          description: Invalid credentials
+        '404':
+          description: Scheduling policy not found
+
+  /api/schedules/{date}:
+    parameters:
+      - $ref: '#/components/parameters/date'
+    get:
+      tags: [Schedules]
+      summary: Get schedule by date
+      description: Retrieves the schedule for a specific date.
+      responses:
+        '200':
+          description: Schedule retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+        '401':
+          description: Invalid credentials
+        '404':
+          description: Schedule not found for the specified date
+    post:
+      tags: [Schedules]
+      summary: Auto-schedule and save
+      description: |
+        Auto-scheduling workflow:
+        1) Validate schedule against policies.
+        2) Try replacements for optional assignments.
+        3) Save and return 201 if a solution is found.
+        4) Return 400 with reason if no solution is found.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleWriteRequest'
+      responses:
+        '201':
+          description: Saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+        '400':
+          description: Invalid input data or no valid solution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReason'
+        '401':
+          description: Invalid credentials
+        '404':
+          description: Schedule not found for the specified date
+    put:
+      tags: [Schedules]
+      summary: Save schedule by date
+      description: |
+        Saves the schedule for a specific date.
+        If the schedule violates policies, returns an error with the violating reason.
+        This operation does not replace optional assignments.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleWriteRequest'
+      responses:
+        '201':
+          description: Saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+        '400':
+          description: Invalid input data or policy violation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReason'
+        '401':
+          description: Invalid credentials
+        '404':
+          description: Schedule not found for the specified date
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    staffId:
+      name: staffId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    policyId:
+      name: policyId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    date:
+      name: date
+      in: path
+      required: true
+      description: Date key used by the scheduling API.
+      schema:
+        type: string
+        example: 2026-06-23
+  schemas:
+    EmptyObject:
+      type: object
+      additionalProperties: false
+    LoginRequest:
+      type: object
+      required: [role, username, password]
+      properties:
+        role:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+    LoginResponse:
+      type: object
+      required: [token, username, role]
+      properties:
+        token:
+          type: string
+        username:
+          type: string
+        role:
+          type: string
+    Staff:
+      type: object
+      required: [staffId, name, title, workingHours, lunchBreak]
+      properties:
+        staffId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        title:
+          type: string
+        workingHours:
+          type: number
+          format: double
+        lunchBreak:
+          type: number
+          format: double
+    StaffUpsertRequest:
+      type: object
+      required: [name, title, workingHours, lunchBreak]
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        workingHours:
+          type: number
+          format: double
+        lunchBreak:
+          type: number
+          format: double
+    Policy:
+      type: object
+      required: [policyId, description, param_1]
+      properties:
+        policyId:
+          type: integer
+          format: int64
+        description:
+          type: string
+        param_1:
+          type: integer
+          format: int64
+    PolicyUpdateRequest:
+      type: object
+      required: [param_1]
+      properties:
+        param_1:
+          type: integer
+          format: int64
+    Assignment:
+      type: object
+      required: [staffId, timeSlot, taskId]
+      properties:
+        staffId:
+          type: integer
+          format: int64
+        timeSlot:
+          type: string
+        taskId:
+          type: integer
+          format: int64
+    Schedule:
+      type: object
+      required:
+        - date
+        - rosterStaffId
+        - bankingStaffId
+        - backupStaffId
+        - inspectionStaffId
+        - notes
+        - assignments
+      properties:
+        date:
+          type: string
+        rosterStaffId:
+          type: integer
+          format: int64
+        bankingStaffId:
+          type: integer
+          format: int64
+        backupStaffId:
+          type: integer
+          format: int64
+        inspectionStaffId:
+          type: integer
+          format: int64
+        notes:
+          type: string
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Assignment'
+    ScheduleWriteRequest:
+      type: object
+      required:
+        - date
+        - rosterStaffId
+        - bankingStaffId
+        - backupStaffId
+        - inspectionStaffId
+        - notes
+        - policies
+        - assignments
+      properties:
+        date:
+          type: string
+        rosterStaffId:
+          type: integer
+          format: int64
+        bankingStaffId:
+          type: integer
+          format: int64
+        backupStaffId:
+          type: integer
+          format: int64
+        inspectionStaffId:
+          type: integer
+          format: int64
+        notes:
+          type: string
+        policies:
+          type: array
+          items:
+            type: integer
+            format: int64
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Assignment'
+    ErrorReason:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+
