@@ -1,0 +1,44 @@
+Prompt assessment 3
+
+Design a clean, user-friendly web interface for the “Shift Planner” tailored to the Auckland library. The UI should support two user roles: Manager and Librarian, with secure login access for each.
+
+Core Screens and Features to Include:
+Login Page: Secure authentication for Manager and Librarian.
+Create a login interface for the “Shift Planner” that accommodates two user roles: Manager and Librarian.
+Include input fields for Username and Password.
+For Librarian, use the password: librarian2026
+Example Librarian Username:  Senior Librarian
+For the manager role, use the password: manager2026
+Example manager Username: Manager
+Upon successful login, each user should be redirected to their specific dashboard (Manager Dashboard and Shift Dashboard) with role-specific navigation and features.
+Design the UI to make it clear which user role is being accessed and provide straightforward error messaging for incorrect credentials.
+Manager Dashboard Screen: This screen includes three parts:
+a. Staff Management: A table or list view of current staff. Columns: Staff Name, Title, Working Hours per week and button 'Edit'. This part also includes the buttons ‘Add Staff Member’ and ‘Save’.
+b. Policy Management:
+A list view of Health and Safety policies with the following policies:
+1. Excluding staff members who are on their lunch break, at least [minimum number] staff members must be present in the library at all times.
+2. Between 12:00 p.m. and 2:00 p.m., each staff member must be assigned to one of the following activities: Lunch Break, Lunch/Check-in, Lunch/Bell, or Lunch/Roaming.
+3. At least one staff member must be assigned to the Service Desk during every hourly time slot.
+4.  A staff member must not be assigned to the same operational task in two consecutive time slots. Operational tasks include Desk, Roaming, and Check-in.
+5.  Where staffing levels permit, no more than two staff members should be assigned to the Service Desk during any hourly time slot.
+6. Staff members working an eight-hour shift must be allocated at least one unassigned (optional) time slot during their shift.
+7. Where staffing levels permit, at least one staff member should be assigned to the Check-in task during every hourly time slot.
+C. Tasks and Colour Setting:
+A list view of tasks and a colour for each task. A ‘Save’ button is included.
+Tasks include Desk, Check-in, Roaming, Picking, Shelving, Bell, Meeting, Lunch, Lunch/ Check-in, Lunch/Bell, Event, Event Prep, and Closing.
+Add a header with navigation tab ‘Staff Management’, ‘Policy Management’, ‘Task Management’, ‘Roster Review’ and ‘Logout’.
+Shift Dashboard Screen: A daily calendar grid layout with names of the available staff as columns and time slots as rows (e.g., 8 AM to 6 PM in 1-hour increments). Each cell shows the task name with a different background colour.  Add a timetable name with the library’s name and a date picker. After the timetable, leave a note space. After the note space, list four tasks: Roster, Banking, Banking Backup, and Daily Building Inspection, each with a staff name. Add a header with navigation tab ‘Auto’ ,’Restore Staff’,’Reschedule’,‘ Save’, ’Review’ and ‘Logout’.
+Review Screen:  A daily calendar grid layout with names of the available staff as columns (staff 1 to 7) and time slots as rows (e.g., 8 AM to 6 PM in 1-hour increments). Each cell shows the task name with a different background colour.  Add a timetable name with the library’s name and a date. After the timetable, leave a note space. After the note space, list four tasks: Roster, Banking, Banking Backup, and Daily Building Inspection, each with a staff name. Add a header with navigation tab ‘Save ’, ’ Export PDF ’, and ‘Logout’. Include a search bar for date and an 'Edit Schedule' button if the user logs in as Senior Librarian. If the user logs in as a manager, the navigation tab ‘Edit Schedule’ does not show and ‘Logout’ changes to ‘back’.
+Additional Elements: Add interactive elements like hover tooltips for choosing a task for each cell, and sample data. Ensure mobile-responsive design hints for tablets. Use sans-serif fonts like Roboto, and include annotations for usability (e.g., 'Click to edit task’).
+
+UI Elements:
+Modern, responsive layout with colours Light Blue, Yellow light and White and simple navigation.
+Clear icons and consistent visual hierarchy.
+Fast load times and easy accessibility from desktop and tablet.
+
+Language:
+Front End: HTML, CSS, JS
+Back End: Java
+Database: PostgreSQL
+
+
