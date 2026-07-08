@@ -5,7 +5,8 @@ info:
   description: |
     OpenAPI definition for Shift Planner API.
 servers:
-  - url: /
+  - url: /1.0/
+    description: Base path for API version 1.0
 security:
   - bearerAuth: []
 paths:
