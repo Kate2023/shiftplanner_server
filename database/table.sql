@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS sp.schedules (
     banking_staff                        INT NULL,
     banking_backup_staff                 INT NULL,
     building_inspector                   INT NULL,
+    policies                             VARCHAR(255) NOT NULL,
 
     CONSTRAINT fk_schedules_roster_staff
     FOREIGN KEY (roster_staff) REFERENCES staff(staff_id),

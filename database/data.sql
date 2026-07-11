@@ -26,9 +26,9 @@ insert into sp.staff(staff_name, working_hours, lunch_break, is_active) values
 ('Sophia Kumar', 36, 60, true);
 
 -- schedules
-insert into sp.schedules (date, notes, roster_staff, banking_staff, banking_backup_staff, building_inspector) values
-('2026-07-04', 'Test day 1', 7, 1, 2, 3),
-('2026-07-05', 'Test day 2', 7, 4, 5, 6);
+insert into sp.schedules (date, notes, roster_staff, banking_staff, banking_backup_staff, building_inspector, policies) values
+('2026-07-04', 'Test day 1', 7, 1, 2, 3, '1,2,3,4,5,6,7'),
+('2026-07-05', 'Test day 2', 7, 4, 5, 6, '1,2,3,4,5,6,7');
 
 -- schedule_assignments
 select * from sp.schedule_assignments;

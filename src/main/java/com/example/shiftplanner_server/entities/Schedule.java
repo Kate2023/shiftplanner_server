@@ -42,6 +42,9 @@ public class Schedule {
     @JoinColumn(name = "building_inspector")
     private Staff buildingInspector;
 
+    @Column(name = "policies", nullable = false)
+    private String policies = "";
+
     public Schedule() {
     }
 
@@ -100,5 +103,12 @@ public class Schedule {
     public void setBuildingInspector(Staff buildingInspector) {
         this.buildingInspector = buildingInspector;
     }
-}
 
+    public String getPolicies() {
+        return policies;
+    }
+
+    public void setPolicies(String policies) {
+        this.policies = policies;
+    }
+}

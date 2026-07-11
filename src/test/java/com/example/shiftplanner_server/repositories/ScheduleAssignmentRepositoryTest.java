@@ -76,9 +76,9 @@ class ScheduleAssignmentRepositoryTest extends PostgresRepositoryTestBase {
     void deleteAllByScheduleDateRemovesAssignments() {
         LocalDate targetDate = LocalDate.of(2026, 7, 16);
         scheduleAssignmentRepository.save(buildAssignment(targetDate, "Picking", LocalTime.of(12, 0)));
+        assertFalse(scheduleAssignmentRepository.findAllBySchedule_Date(targetDate).isEmpty());
 
         scheduleAssignmentRepository.deleteAllBySchedule_Date(targetDate);
-
         assertTrue(scheduleAssignmentRepository.findAllBySchedule_Date(targetDate).isEmpty());
     }
 
