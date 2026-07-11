@@ -196,7 +196,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ScheduleWriteRequest'
+              $ref: '#/components/schemas/Schedule'
       responses:
         '201':
           description: Saved successfully
@@ -226,7 +226,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ScheduleWriteRequest'
+              $ref: '#/components/schemas/Schedule'
       responses:
         '201':
           description: Saved successfully
@@ -362,37 +362,6 @@ components:
           type: integer
           format: int64
     Schedule:
-      type: object
-      required:
-        - date
-        - rosterStaffId
-        - bankingStaffId
-        - backupStaffId
-        - inspectionStaffId
-        - notes
-        - assignments
-      properties:
-        date:
-          type: string
-        rosterStaffId:
-          type: integer
-          format: int64
-        bankingStaffId:
-          type: integer
-          format: int64
-        backupStaffId:
-          type: integer
-          format: int64
-        inspectionStaffId:
-          type: integer
-          format: int64
-        notes:
-          type: string
-        assignments:
-          type: array
-          items:
-            $ref: '#/components/schemas/Assignment'
-    ScheduleWriteRequest:
       type: object
       required:
         - date
