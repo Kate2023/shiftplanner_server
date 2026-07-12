@@ -45,7 +45,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Staff'
+                  $ref: '#/components/schemas/StaffParam'
         '401':
           description: Invalid credentials
     post:
@@ -66,7 +66,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Staff'
+                  $ref: '#/components/schemas/StaffParam'
         '400':
           description: Invalid input data
         '401':
@@ -93,7 +93,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Staff'
+                  $ref: '#/components/schemas/StaffParam'
         '400':
           description: Invalid input data
         '401':
@@ -112,7 +112,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Staff'
+                  $ref: '#/components/schemas/StaffParam'
         '401':
           description: Invalid credentials
         '404':
@@ -131,7 +131,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Policy'
+                  $ref: '#/components/schemas/PolicyParam'
         '401':
           description: Invalid credentials
 
@@ -156,7 +156,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Policy'
+                  $ref: '#/components/schemas/PolicyParam'
         '400':
           description: Invalid input data
         '401':
@@ -177,7 +177,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Schedule'
+                $ref: '#/components/schemas/ScheduleParam'
         '401':
           description: Invalid credentials
         '404':
@@ -196,14 +196,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Schedule'
+              $ref: '#/components/schemas/ScheduleParam'
       responses:
         '201':
           description: Saved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Schedule'
+                $ref: '#/components/schemas/ScheduleParam'
         '400':
           description: Invalid input data or no valid solution
           content:
@@ -226,14 +226,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Schedule'
+              $ref: '#/components/schemas/ScheduleParam'
       responses:
         '201':
           description: Saved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Schedule'
+                $ref: '#/components/schemas/ScheduleParam'
         '400':
           description: Invalid input data or policy violation
           content:
@@ -299,7 +299,7 @@ components:
           type: string
         role:
           type: string
-    Staff:
+    StaffParam:
       type: object
       required: [staffId, name, title, workingHours, lunchBreak]
       properties:
@@ -330,7 +330,7 @@ components:
         lunchBreak:
           type: number
           format: double
-    Policy:
+    PolicyParam:
       type: object
       required: [policyId, description, param_1]
       properties:
@@ -361,7 +361,7 @@ components:
         taskId:
           type: integer
           format: int64
-    Schedule:
+    ScheduleParam:
       type: object
       required:
         - date
