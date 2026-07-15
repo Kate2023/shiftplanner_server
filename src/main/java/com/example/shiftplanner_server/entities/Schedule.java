@@ -8,11 +8,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "schedules", schema = "sp")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Schedule {
 
     @Id
@@ -45,70 +51,4 @@ public class Schedule {
     @Column(name = "policies", nullable = false)
     private String policies = "";
 
-    public Schedule() {
-    }
-
-    public Integer getScheduleId() {
-        return scheduleId;
-    }
-
-    public void setScheduleId(Integer scheduleId) {
-        this.scheduleId = scheduleId;
-    }
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
-    public String getNotes() {
-        return notes;
-    }
-
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
-
-    public Staff getRosterStaff() {
-        return rosterStaff;
-    }
-
-    public void setRosterStaff(Staff rosterStaff) {
-        this.rosterStaff = rosterStaff;
-    }
-
-    public Staff getBankingStaff() {
-        return bankingStaff;
-    }
-
-    public void setBankingStaff(Staff bankingStaff) {
-        this.bankingStaff = bankingStaff;
-    }
-
-    public Staff getBankingBackupStaff() {
-        return bankingBackupStaff;
-    }
-
-    public void setBankingBackupStaff(Staff bankingBackupStaff) {
-        this.bankingBackupStaff = bankingBackupStaff;
-    }
-
-    public Staff getBuildingInspector() {
-        return buildingInspector;
-    }
-
-    public void setBuildingInspector(Staff buildingInspector) {
-        this.buildingInspector = buildingInspector;
-    }
-
-    public String getPolicies() {
-        return policies;
-    }
-
-    public void setPolicies(String policies) {
-        this.policies = policies;
-    }
 }

@@ -4,17 +4,16 @@ import com.example.shiftplanner_server.model.StaffParam;
 import com.example.shiftplanner_server.model.StaffUpsertRequest;
 import com.example.shiftplanner_server.entities.Staff;
 import com.example.shiftplanner_server.repositories.StaffRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class StaffService {
     private final StaffRepository staffRepository;
 
-    public StaffService(StaffRepository staffRepository) {
-        this.staffRepository = staffRepository;
-    }
 
     public List<Staff> getActive() {
         return staffRepository.findAllByActiveTrue();

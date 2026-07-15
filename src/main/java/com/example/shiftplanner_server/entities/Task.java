@@ -6,9 +6,15 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "tasks", schema = "sp")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Task {
 
     @Id
@@ -28,47 +34,5 @@ public class Task {
     @Column(name = "is_auto", nullable = false)
     private boolean auto;
 
-    public Task() {
-    }
-
-    public Integer getTaskId() {
-        return taskId;
-    }
-
-    public void setTaskId(Integer taskId) {
-        this.taskId = taskId;
-    }
-
-    public String getTaskName() {
-        return taskName;
-    }
-
-    public void setTaskName(String taskName) {
-        this.taskName = taskName;
-    }
-
-    public String getColour() {
-        return colour;
-    }
-
-    public void setColour(String colour) {
-        this.colour = colour;
-    }
-
-    public boolean isLunch() {
-        return lunch;
-    }
-
-    public void setLunch(boolean lunch) {
-        this.lunch = lunch;
-    }
-
-    public boolean isAuto() {
-        return auto;
-    }
-
-    public void setAuto(boolean auto) {
-        this.auto = auto;
-    }
 }
 

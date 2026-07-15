@@ -4,17 +4,16 @@ import com.example.shiftplanner_server.model.LoginRequest;
 import com.example.shiftplanner_server.model.LoginResponse;
 import com.example.shiftplanner_server.entities.AppUser;
 import com.example.shiftplanner_server.repositories.AppUserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@RequiredArgsConstructor
 public class AppUserService {
     private final AppUserRepository appUserRepository;
 
-    public AppUserService(AppUserRepository appUserRepository) {
-        this.appUserRepository = appUserRepository;
-    }
 
     public LoginResponse login(LoginRequest request) {
         String username = request.getUsername();

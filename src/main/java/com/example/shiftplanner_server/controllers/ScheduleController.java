@@ -2,6 +2,7 @@ package com.example.shiftplanner_server.controllers;
 
 import com.example.shiftplanner_server.model.ScheduleParam;
 import com.example.shiftplanner_server.services.ScheduleService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,12 +17,10 @@ import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/schedules")
+@RequiredArgsConstructor
 public class ScheduleController {
     private final ScheduleService scheduleService;
 
-    public ScheduleController(ScheduleService scheduleService) {
-        this.scheduleService = scheduleService;
-    }
 
     @GetMapping("/{date}")
     public ResponseEntity<ScheduleParam> getByDate(@PathVariable LocalDate date) {

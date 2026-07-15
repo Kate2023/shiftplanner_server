@@ -4,17 +4,16 @@ import com.example.shiftplanner_server.model.PolicyParam;
 import com.example.shiftplanner_server.model.PolicyUpdateRequest;
 import com.example.shiftplanner_server.entities.Policy;
 import com.example.shiftplanner_server.repositories.PolicyRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class PolicyService {
     private final PolicyRepository policyRepository;
 
-    public PolicyService(PolicyRepository policyRepository) {
-        this.policyRepository = policyRepository;
-    }
 
     public List<Policy> getAll() {
         return policyRepository.findAll();

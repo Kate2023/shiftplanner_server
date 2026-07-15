@@ -6,9 +6,15 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "policies", schema = "sp")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Policy {
 
     @Id
@@ -22,31 +28,5 @@ public class Policy {
     @Column(name = "param_1")
     private Integer param1;
 
-    public Policy() {
-    }
-
-    public Integer getPolicyId() {
-        return policyId;
-    }
-
-    public void setPolicyId(Integer policyId) {
-        this.policyId = policyId;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Integer getParam1() {
-        return param1;
-    }
-
-    public void setParam1(Integer param1) {
-        this.param1 = param1;
-    }
 }
 

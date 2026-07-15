@@ -9,6 +9,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalTime;
 
@@ -20,6 +23,9 @@ import java.time.LocalTime;
                 @UniqueConstraint(name = "uq_assignment_staff_slot", columnNames = {"schedule_id", "staff_id", "time_slot"})
         }
 )
+@Getter
+@Setter
+@NoArgsConstructor
 public class ScheduleAssignment {
 
     @Id
@@ -42,47 +48,5 @@ public class ScheduleAssignment {
     @JoinColumn(name = "task_id", nullable = false)
     private Task task;
 
-    public ScheduleAssignment() {
-    }
-
-    public Integer getAssignmentId() {
-        return assignmentId;
-    }
-
-    public void setAssignmentId(Integer assignmentId) {
-        this.assignmentId = assignmentId;
-    }
-
-    public Schedule getSchedule() {
-        return schedule;
-    }
-
-    public void setSchedule(Schedule schedule) {
-        this.schedule = schedule;
-    }
-
-    public Staff getStaff() {
-        return staff;
-    }
-
-    public void setStaff(Staff staff) {
-        this.staff = staff;
-    }
-
-    public LocalTime getTimeSlot() {
-        return timeSlot;
-    }
-
-    public void setTimeSlot(LocalTime timeSlot) {
-        this.timeSlot = timeSlot;
-    }
-
-    public Task getTask() {
-        return task;
-    }
-
-    public void setTask(Task task) {
-        this.task = task;
-    }
 }
 

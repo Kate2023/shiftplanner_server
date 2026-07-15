@@ -2,18 +2,17 @@ package com.example.shiftplanner_server.services;
 
 import com.example.shiftplanner_server.entities.ScheduleAssignment;
 import com.example.shiftplanner_server.repositories.ScheduleAssignmentRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ScheduleAssignmentService {
     private final ScheduleAssignmentRepository scheduleAssignmentRepository;
 
-    public ScheduleAssignmentService(ScheduleAssignmentRepository scheduleAssignmentRepository) {
-        this.scheduleAssignmentRepository = scheduleAssignmentRepository;
-    }
 
     public List<ScheduleAssignment> getByDate(LocalDate date) {
         return scheduleAssignmentRepository.findAllBySchedule_Date(date);

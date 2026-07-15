@@ -3,6 +3,7 @@ package com.example.shiftplanner_server.controllers;
 import com.example.shiftplanner_server.model.StaffParam;
 import com.example.shiftplanner_server.model.StaffUpsertRequest;
 import com.example.shiftplanner_server.services.StaffService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,12 +19,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/staff")
+@RequiredArgsConstructor
 public class StaffController {
     private final StaffService staffService;
 
-    public StaffController(StaffService staffService) {
-        this.staffService = staffService;
-    }
 
     @GetMapping
     public ResponseEntity<List<StaffParam>> getAll() {

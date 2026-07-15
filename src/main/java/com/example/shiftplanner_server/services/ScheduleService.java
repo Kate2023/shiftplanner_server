@@ -4,6 +4,7 @@ import com.example.shiftplanner_server.model.ScheduleParam;
 import com.example.shiftplanner_server.entities.Schedule;
 import com.example.shiftplanner_server.entities.ScheduleAssignment;
 import com.example.shiftplanner_server.repositories.ScheduleRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -11,14 +12,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ScheduleService {
     private final ScheduleRepository scheduleRepository;
     private final ScheduleAssignmentService scheduleAssignmentService;
 
-    public ScheduleService(ScheduleRepository scheduleRepository, ScheduleAssignmentService scheduleAssignmentService) {
-        this.scheduleRepository = scheduleRepository;
-        this.scheduleAssignmentService = scheduleAssignmentService;
-    }
 
     // TODO: replace Schedule with ScheduleParam, which will be generated from openapi.yaml
     public Schedule save(LocalDate date, Schedule schedule, List<ScheduleAssignment> assignment) {
