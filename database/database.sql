@@ -80,6 +80,7 @@ WHERE table_schema = 'sp';
 -- schedules
 -- schedule_assignments
 -- tasks
+-- token
 
 -- policies
 select * from sp.policies;
@@ -93,3 +94,5 @@ select * from sp.schedules;
 select * from sp.schedule_assignments;
 -- tasks
 select * from sp.tasks;
+-- token
+select * from sp.token;

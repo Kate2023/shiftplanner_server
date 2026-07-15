@@ -83,6 +83,18 @@ CREATE TABLE IF NOT EXISTS schedule_assignments (
 -- Helpful indexes
 CREATE INDEX IF NOT EXISTS ix_assignments_schedule ON schedule_assignments (schedule_id);
 
+-- 7) Token
+CREATE TABLE IF NOT EXISTS sp.token (
+    token       VARCHAR(255) NOT NULL,
+    user_id     INT NOT NULL,
+    created_on  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_token_user
+    FOREIGN KEY (user_id) REFERENCES sp.users(user_id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_token_token ON sp.token (token);
+
 COMMIT;
 
 END;
