@@ -12,8 +12,10 @@ insert into sp.policies(description, param_1) values
 
 -- users
 insert into sp.users(username, password, is_manager) values
-('Manager', 'manager2026', true),
-('Senior Librarian', 'librarian2026', false);
+('Manager', '$2a$10$5B5abE.REDO6KmDqBr/w8O2OJaiZ8VVenmdc9VRXx8vexSP6pVCvm', true),
+('Senior Librarian', '$2a$10$7cgpbFYv5wq9FZUBsWx8D.0iHU0c.B0P96CrcsO9cFUEcA8XHYnmO', false);
+-- ('Manager', 'manager2026', true),
+-- ('Senior Librarian', 'librarian2026', false);
 
 -- stafff
 insert into sp.staff(staff_name, working_hours, lunch_break, is_active) values

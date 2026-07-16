@@ -29,5 +29,11 @@ public class Token {
 
     @Column(name = "created_on", nullable = false)
     private LocalDateTime createdOn;
+
+    public Token(String token, AppUser appUser) {
+        this.token = token;
+        this.user = appUser;
+        this.createdOn = LocalDateTime.now();
+    }
 }
 
