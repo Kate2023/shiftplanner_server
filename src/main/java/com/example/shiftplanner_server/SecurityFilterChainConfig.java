@@ -3,20 +3,21 @@ package com.example.shiftplanner_server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class SecurityFilterChainConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable) // Disable CSRF for stateless REST APIs
+            // Disable CSRF as we are  building a stateless REST API
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/password/encode").permitAll() // Allow public access to this route
-                .anyRequest().authenticated()                    // Protect everything else
+                // Allow all requests to any endpoint without authentication
+                .anyRequest().permitAll()
             );
+
         return http.build();
     }
 }
