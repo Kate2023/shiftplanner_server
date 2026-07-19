@@ -14,18 +14,25 @@ import java.util.List;
 public class StaffService {
     private final StaffRepository staffRepository;
 
-
-    public List<Staff> getActive() {
-        return staffRepository.findAllByActiveTrue();
-    }
-
     public Staff save(Staff staff) {
         return staffRepository.save(staff);
     }
 
     public List<StaffParam> getAll() {
-        // TODO: map entity list to StaffParam list.
-        return List.of();
+        return staffRepository.findAllByActiveTrue()
+            .stream()
+            .map(this::toStaffParam)
+            .toList();
+    }
+
+    private StaffParam toStaffParam(Staff staff) {
+        return new StaffParam()
+            .staffId(staff.getStaffId() == null ? null : staff.getStaffId().longValue())
+            .name(staff.getStaffName())
+            // Title is required by the API model but not yet present on the entity.
+            .title("")
+            .workingHours(staff.getWorkingHours() == null ? null : staff.getWorkingHours().doubleValue())
+            .lunchBreak(staff.getLunchBreak() == null ? null : staff.getLunchBreak().doubleValue());
     }
 
     public List<StaffParam> create(StaffUpsertRequest request) {

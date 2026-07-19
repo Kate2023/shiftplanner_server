@@ -56,7 +56,7 @@ dependencies {
 }
 
 
-def openApiSpec = "$projectDir/src/main/resources/openapi.yaml"
+def openApiSpec = "$projectDir/src/main/resources/static/openapi.yaml"
 def openApiOutputRoot = layout.buildDirectory.dir('generated/openapi').get().asFile.absolutePath
 
 tasks.withType(GenerateTask).configureEach {
@@ -106,7 +106,7 @@ tasks.register('generateOpenApiClient', GenerateTask) {
 
 tasks.register('generateOpenApi') {
     group = 'openapi tools'
-    description = 'Generate server and client code from src/main/resources/openapi.yaml'
+    description = 'Generate server and client code from src/main/resources/static/openapi.yaml'
     dependsOn 'openApiGenerate', 'generateOpenApiClient'
 }
 
