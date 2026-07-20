@@ -7,6 +7,7 @@ import com.example.shiftplanner_server.repositories.StaffRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -36,18 +37,41 @@ public class StaffService {
     }
 
     public List<StaffParam> create(StaffUpsertRequest request) {
-        // TODO: create staff from request and return current list.
-        return List.of();
+        Staff staff = new Staff();
+        updateStaffFromRequest(request, staff);
+        staffRepository.save(staff);
+        return getAll();
     }
 
     public List<StaffParam> update(Integer staffId, StaffUpsertRequest request) {
-        // TODO: update staff by id and return current list.
-        return List.of();
+        Staff staff = staffRepository.getReferenceById(staffId);
+        updateStaffFromRequest(request, staff);
+        staffRepository.save(staff);
+        return getAll();
     }
 
+    /**
+     * Soft delete a staff member by setting their active status to false. So that the existing schedules can
+     * still reference the staff member without causing data integrity issues.
+     * @param staffId the id of the staff to be deleted
+     * @return all active staffs
+     */
     public List<StaffParam> delete(Integer staffId) {
-        // TODO: delete staff by id and return current list.
-        return List.of();
+        Staff staff = staffRepository.getReferenceById(staffId);
+        staff.setActive(false);
+        staffRepository.save(staff);
+        return getAll();
+    }
+
+    private static void updateStaffFromRequest(StaffUpsertRequest request, Staff staff) {
+        staff.setStaffName(request.getName());
+        staff.setWorkingHours(request.getWorkingHours() == null
+            ? BigDecimal.ZERO
+            : BigDecimal.valueOf(request.getWorkingHours()));
+        staff.setLunchBreak(request.getLunchBreak() == null
+            ? BigDecimal.ZERO
+            : BigDecimal.valueOf(request.getLunchBreak()));
+        staff.setActive(true);
     }
 }
 

@@ -9,9 +9,5 @@ import java.util.List;
 @Repository
 public interface StaffRepository extends JpaRepository<Staff, Integer> {
     List<Staff> findAllByActiveTrue();
-//
-//    default Staff saveStaff(Staff staff) {
-//        return save(staff);
-//    }
 }
 
