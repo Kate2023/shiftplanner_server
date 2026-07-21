@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS sp.tasks (
     task_name    VARCHAR(255) NOT NULL UNIQUE,
     colour       VARCHAR(7) NOT NULL CHECK (colour ~ '^#[0-9A-Fa-f]{6}$'),
     is_lunch     BOOLEAN NOT NULL DEFAULT FALSE,
+    task_alias   INT NULL,
     is_auto      BOOLEAN NOT NULL DEFAULT FALSE
 );
 

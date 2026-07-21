@@ -54,3 +54,21 @@ insert into sp.tasks (task_name, colour, is_lunch, is_auto) values
 ('Lunch/Bell', '#ffb3c7', true, false),
 ('Lunch/Roaming', '#8ee3ef', true, false),
 ('Optional', '#c7d2e2', false, true);
+
+-- Map lunch-combo tasks to the same alias as their base task
+UPDATE sp.tasks t
+SET task_alias = CASE t.task_name
+                     WHEN 'Check-in'       THEN lc.task_id
+                     WHEN 'Lunch/Check-in' THEN c.task_id
+                     WHEN 'Roaming'        THEN lr.task_id
+                     WHEN 'Lunch/Roaming'  THEN r.task_id
+    END
+FROM
+    (SELECT task_id FROM sp.tasks WHERE task_name = 'Check-in') c,
+    (SELECT task_id FROM sp.tasks WHERE task_name = 'Lunch/Check-in') lc,
+    (SELECT task_id FROM sp.tasks WHERE task_name = 'Roaming') r,
+    (SELECT task_id FROM sp.tasks WHERE task_name = 'Lunch/Roaming') lr
+WHERE t.task_name IN (
+                      'Check-in', 'Lunch/Check-in',
+                      'Roaming', 'Lunch/Roaming'
+    );
