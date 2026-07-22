@@ -72,6 +72,18 @@ class ScheduleAssignmentRepositoryTest extends PostgresRepositoryTestBase {
     }
 
     @Test
+    void findAllByScheduleIdReturnsAssignments() {
+        LocalDate targetDate = LocalDate.of(2026, 7, 15);
+        ScheduleAssignment first = scheduleAssignmentRepository.save(buildAssignment(targetDate, "Desk", LocalTime.of(10, 0)));
+        scheduleAssignmentRepository.save(buildAssignment(targetDate, "Check-in", LocalTime.of(11, 0)));
+
+        List<ScheduleAssignment> assignments = scheduleAssignmentRepository
+                .findAllBySchedule_ScheduleId(first.getSchedule().getScheduleId());
+
+        assertEquals(2, assignments.size());
+    }
+
+    @Test
     @Transactional
     void deleteAllByScheduleDateRemovesAssignments() {
         LocalDate targetDate = LocalDate.of(2026, 7, 16);

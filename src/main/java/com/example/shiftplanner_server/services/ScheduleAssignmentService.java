@@ -14,8 +14,8 @@ public class ScheduleAssignmentService {
     private final ScheduleAssignmentRepository scheduleAssignmentRepository;
 
 
-    public List<ScheduleAssignment> getByDate(LocalDate date) {
-        return scheduleAssignmentRepository.findAllBySchedule_Date(date);
+    public List<ScheduleAssignment> getById(Integer id) {
+        return scheduleAssignmentRepository.findAllBySchedule_ScheduleId(id);
     }
 
     public List<ScheduleAssignment> saveToDate(LocalDate date, List<ScheduleAssignment> scheduleAssignments) {

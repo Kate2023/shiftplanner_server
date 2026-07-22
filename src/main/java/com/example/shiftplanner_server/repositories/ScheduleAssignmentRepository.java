@@ -10,6 +10,8 @@ import java.util.List;
 @Repository
 public interface ScheduleAssignmentRepository extends JpaRepository<ScheduleAssignment, Integer> {
 
+    List<ScheduleAssignment> findAllBySchedule_ScheduleId(Integer scheduleId);
+
     List<ScheduleAssignment> findAllBySchedule_Date(LocalDate date);
 
 //    default List<ScheduleAssignment> saveScheduleAssignmentList(List<ScheduleAssignment> scheduleAssignments) {

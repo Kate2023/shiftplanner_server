@@ -9,12 +9,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -36,7 +38,10 @@ class ScheduleControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new ScheduleController(scheduleService)).build();
+        mockMvc = MockMvcBuilders
+            .standaloneSetup(new ScheduleController(scheduleService))
+            .setControllerAdvice(new ApiExceptionHandler())
+            .build();
     }
 
     @Test
@@ -82,6 +87,23 @@ class ScheduleControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.date").value("2026-07-20"));
+
+        verify(scheduleService).saveByDate(eq(date), any(ScheduleParam.class));
+    }
+
+    @Test
+    void saveByDateReturnsErrorReasonWhenBadRequest() throws Exception {
+        LocalDate date = LocalDate.of(2026, 7, 20);
+        when(scheduleService.saveByDate(eq(date), any(ScheduleParam.class)))
+            .thenThrow(new ResponseStatusException(BAD_REQUEST, "Path date must match request date"));
+
+        ScheduleParam request = sampleSchedule(LocalDate.of(2026, 7, 21));
+
+        mockMvc.perform(put("/api/schedules/{date}", "2026-07-20")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.reason").value("Path date must match request date"));
 
         verify(scheduleService).saveByDate(eq(date), any(ScheduleParam.class));
     }

@@ -96,3 +96,5 @@ select * from sp.schedule_assignments;
 select * from sp.tasks;
 -- token
 select * from sp.token;
+
+select * from sp.schedule_assignments sa where sa.schedule_id=1;
