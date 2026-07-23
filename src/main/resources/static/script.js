@@ -57,6 +57,43 @@ const defaultStaff = [
 
 const defaultShiftDate = "2026-06-10";
 
+function getAuthToken() {
+  return localStorage.getItem("shiftPlannerAuthToken") || "";
+}
+
+function buildApiHeaders(requiresAuth = true, extraHeaders = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...extraHeaders
+  };
+
+  if (requiresAuth) {
+    const token = getAuthToken();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+  }
+
+  return headers;
+}
+
+async function apiFetch(url, options = {}, requiresAuth = true) {
+  const { headers = {}, ...rest } = options;
+  const response = await fetch(url, {
+    ...rest,
+    headers: buildApiHeaders(requiresAuth, headers)
+  });
+
+  if (response.status === 401 && requiresAuth) {
+    localStorage.removeItem("shiftPlannerAuthToken");
+    localStorage.removeItem("shiftPlannerCurrentUsername");
+    localStorage.removeItem("shiftPlannerCurrentRole");
+    window.location.href = "index.html";
+  }
+
+  return response;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const managerBtn = document.getElementById("managerRoleBtn");
   const librarianBtn = document.getElementById("librarianRoleBtn");
@@ -140,28 +177,58 @@ function setRole(role) {
 }
 
 function handleLogin() {
+  loginWithApi();
+}
+
+async function loginWithApi() {
   const username = document.getElementById("username")?.value.trim();
   const password = document.getElementById("password")?.value.trim();
   const error = document.getElementById("loginError");
 
-  const validManager =
-    currentRole === "Manager" &&
-    username === "Manager" &&
-    password === "manager2026";
+  if (error) {
+    error.style.display = "none";
+  }
 
-  const validLibrarian =
-    currentRole === "Librarian" &&
-    username === "Senior Librarian" &&
-    password === "librarian2026";
+  if (!username || !password) {
+    if (error) {
+      error.textContent = "Please enter both username and password.";
+      error.style.display = "block";
+    }
+    return;
+  }
 
-  if (validManager) {
-    localStorage.setItem("shiftPlannerCurrentRole", "Manager");
-    window.location.href = "manager.html";
-  } else if (validLibrarian) {
-    localStorage.setItem("shiftPlannerCurrentRole", "Librarian");
-    window.location.href = "librarian.html";
-  } else if (error) {
-    error.style.display = "block";
+  const loginPayload = {
+    role: currentRole === "Manager" ? "manager" : "staff",
+    username,
+    password
+  };
+
+  try {
+    const response = await apiFetch("api/auth/login", {
+      method: "POST",
+      body: JSON.stringify(loginPayload)
+    }, false);
+
+    if (!response.ok) {
+      throw new Error("Invalid credentials");
+    }
+
+    const loginResponse = await response.json();
+    const apiRole = (loginResponse.role || "").toLowerCase();
+    const appRole = apiRole === "manager" ? "Manager" : "Librarian";
+
+    if (loginResponse.token) {
+      localStorage.setItem("shiftPlannerAuthToken", loginResponse.token);
+    }
+    localStorage.setItem("shiftPlannerCurrentRole", appRole);
+    localStorage.setItem("shiftPlannerCurrentUsername", loginResponse.username || username);
+
+    window.location.href = appRole === "Manager" ? "manager.html" : "librarian.html";
+  } catch (e) {
+    if (error) {
+      error.textContent = "Incorrect credentials. Please check your username, password, and selected role.";
+      error.style.display = "block";
+    }
   }
 }
 
@@ -170,6 +237,8 @@ function getCurrentRole() {
 }
 
 function logout() {
+  localStorage.removeItem("shiftPlannerAuthToken");
+  localStorage.removeItem("shiftPlannerCurrentUsername");
   window.location.href = "index.html";
 }
 
