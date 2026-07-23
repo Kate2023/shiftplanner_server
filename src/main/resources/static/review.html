@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shift Planner - Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body onload="initReviewPage()">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-badge">📋</div>
+      <div>Shift Planner — Review Screen</div>
+    </div>
+    <div class="nav">
+      <button id="reviewSaveBtn" onclick="mockSave('Saved')">Save</button>
+      <button onclick="exportShiftScreenAsPDF()">Export PDF</button>
+      <button id="reviewEditScheduleBtn" onclick="window.location.href='librarian.html'">Edit Schedule</button>
+      <button id="reviewBackBtn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card" id="reviewScreenExportArea">
+      <div class="schedule-date-row">
+        <label for="reviewDate">Search by date:</label>
+        <input type="date" id="reviewDate" onchange="syncReviewDateToStoredValue()" />
+      </div>
+
+      <div class="schedule-title">
+        <h3 id="reviewScheduleTitle">Auckland Library — Wednesday, 10 June 2026</h3>
+        <div class="subtle">Review the saved shift schedule for all staff and time slots.</div>
+      </div>
+
+      <div class="calendar-wrapper">
+        <table class="calendar-table">
+          <thead>
+            <tr id="reviewHeaderRow">
+              <th class="time-cell">Time</th>
+            </tr>
+          </thead>
+          <tbody id="reviewCalendarBody"></tbody>
+        </table>
+      </div>
+
+      <div class="notes-area">
+        <label for="reviewNotes">Notes</label>
+        <textarea
+          id="reviewNotes"
+          placeholder="Review notes..."
+          oninput="saveNotes('reviewNotes','shiftPlannerReviewNotes')"
+        ></textarea>
+      </div>
+
+      <div class="daily-tasks">
+        <div class="mini-card">
+          <h4>Roster</h4>
+          <div id="reviewRosterName"></div>
+        </div>
+
+        <div class="mini-card">
+          <h4>Banking</h4>
+          <div id="reviewBankingName"></div>
+        </div>
+
+        <div class="mini-card">
+          <h4>Banking Backup</h4>
+          <div id="reviewBankingBackupName"></div>
+        </div>
+
+        <div class="mini-card">
+          <h4>Daily Building Inspection</h4>
+          <div id="reviewInspectionName"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

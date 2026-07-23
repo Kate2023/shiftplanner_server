@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shift Planner - Manager Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body onload="initManagerPage()">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-badge">📘</div>
+      <div>Shift Planner — Manager Dashboard</div>
+    </div>
+    <div class="nav">
+      <button onclick="showSection('staffSection')">Staff Management</button>
+      <button onclick="showSection('policySection')">Policies</button>
+      <button onclick="showSection('taskSection')">Task Management</button>
+      <button onclick="window.location.href='review.html'">Roster Review</button>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <section id="staffSection" class="card">
+      <h2 class="section-title">Staff Management</h2>
+      <div class="subtle">Add, edit, delete, and search staff members used in the shift planner.</div>
+
+      <div class="toolbar">
+        <div class="actions-inline">
+          <button class="btn btn-primary" onclick="openStaffForm()">Add Staff</button>
+        </div>
+        <div class="search-bar">
+          <input
+            id="staffSearch"
+            type="text"
+            placeholder="Search by name or title..."
+            oninput="renderStaffTable()"
+          />
+        </div>
+      </div>
+
+      <div class="calendar-wrapper">
+        <table id="staffTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Title</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="card-lite" id="staffFormCard" style="margin-top: 20px;">
+        <h3 id="staffFormTitle" class="section-title">Add Staff Member</h3>
+        <input type="hidden" id="editingStaffId" />
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="staffName">Name</label>
+            <input id="staffName" type="text" placeholder="e.g. Emma Li" />
+          </div>
+
+          <div class="form-group">
+            <label for="staffTitle">Title</label>
+            <input id="staffTitle" type="text" placeholder="e.g. Librarian" />
+          </div>
+        </div>
+
+        <div class="actions-inline">
+          <button class="btn btn-primary" onclick="saveStaff()">Save Staff</button>
+          <button class="btn" onclick="resetStaffForm()">Clear</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="policySection" class="card hidden">
+      <h2 class="section-title">Policies</h2>
+      <div class="subtle">Health and Safety policy rules for roster planning.</div>
+
+      <div class="policy-list" style="margin-top: 16px;">
+        <div class="policy-item">
+          <strong>1.</strong>
+          Excluding staff who are on their lunch break, there must be at least
+          <input
+            id="minimumStaffInput"
+            type="number"
+            min="1"
+            style="width: 90px; display: inline-block; margin: 0 6px;"
+          />
+          staff members present in the library at all times.
+        </div>
+
+        <div class="policy-item">
+          <strong>2.</strong>
+          Between 12:00 p.m. and 2:00 p.m., every staff member must be allocated one of the four tasks: lunch break, lunch/ check-in, lunch/bell or lunch/roaming.
+        </div>
+
+        <div class="policy-item">
+          <strong>3.</strong>
+          At least one staff member must be assigned to the service desk during every hourly time slot.
+        </div>
+
+        <div class="policy-item">
+          <strong>4.</strong>
+          A staff member must not be assigned to two consecutive Desk, Check-in, Picking, Roaming or Shelving tasks.
+        </div>
+
+        <div class="policy-item">
+          <strong>5.</strong>
+          At most two staff members should be assigned to the service desk during each hourly time slot whenever possible.
+        </div>
+
+        <div class="policy-item">
+          <strong>6.</strong>
+          Staff members working an eight-hour shift must be allocated at least one Optional (unassigned) time slot during the day.
+        </div>
+
+        <div class="policy-item">
+          <strong>7.</strong>
+          Where staffing levels permit, a staff member should be assigned to the Check-in task during every hourly time slot.
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top: 16px;">
+        <button class="btn btn-primary" onclick="savePolicies()">Save Policies</button>
+      </div>
+    </section>
+
+    <section id="taskSection" class="card hidden">
+     <h2 class="section-title">Task Management</h2>
+     <div class="subtle">Task colours for different activities.</div>
+
+     <div id="taskColorList" class="task-list" style="margin-top: 16px;"></div>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

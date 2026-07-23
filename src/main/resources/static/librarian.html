@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shift Planner - Shift Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body onload="initLibrarianPage()">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-badge">🗓️</div>
+      <div>Shift Planner — Shift Dashboard</div>
+    </div>
+    <div class="nav">
+      <button onclick="resetShift()">Reset</button>
+      <button onclick="reviewSchedule()">Review</button>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="schedule-date-row">
+     <label for="shiftDate">Shift date:</label>
+     <input type="date" id="shiftDate" onchange="saveShiftDate()" />
+
+     <div class="schedule-actions-group">
+      <button type="button" class="btn" onclick="autoScheduleShift()">Auto Completion</button>
+      <div class="save-to-wrap">
+      <button type="button" class="btn" onclick="openSaveToDatePicker()">Save to</button>
+      <input
+        type="date"
+        id="saveToDate"
+        class="save-to-date-popup-anchor"
+        onchange="saveShiftToSelectedDate()"
+        tabindex="-1"
+      />
+    </div>
+  </div>
+</div>
+
+      <div class="schedule-title">
+        <h3 id="shiftScheduleTitle">Auckland Library — Wednesday, 10 June 2026</h3>
+        <div class="subtle">Assign a task for each staff member at each time slot using the dropdown menu.</div>
+      </div>
+
+      <div class="calendar-wrapper">
+        <table class="calendar-table">
+          <thead>
+            <tr id="shiftHeaderRow">
+              <th class="time-cell">
+                <button type="button" class="btn btn-primary" onclick="addStaffColumn()">Add staff</button>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="shiftCalendarBody"></tbody>
+        </table>
+      </div>
+
+      <div class="notes-area">
+        <label for="shiftNotes">Notes</label>
+        <textarea
+          id="shiftNotes"
+          placeholder="Add timetable notes here..."
+          oninput="saveNotes('shiftNotes','shiftPlannerNotes')"
+        ></textarea>
+      </div>
+
+      <div class="daily-tasks">
+        <div class="mini-card">
+          <h4>Roster</h4>
+          <select id="dutyRoster" onchange="saveDailyAssignments()"></select>
+        </div>
+        <div class="mini-card">
+          <h4>Banking</h4>
+          <select id="dutyBanking" onchange="saveDailyAssignments()"></select>
+        </div>
+        <div class="mini-card">
+          <h4>Banking Backup</h4>
+          <select id="dutyBankingBackup" onchange="saveDailyAssignments()"></select>
+        </div>
+        <div class="mini-card">
+          <h4>Daily Building Inspection</h4>
+          <select id="dutyInspection" onchange="saveDailyAssignments()"></select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
