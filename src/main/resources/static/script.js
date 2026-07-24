@@ -1,4 +1,5 @@
 let currentRole = "Manager";
+const MINIMUM_STAFF_POLICY_ID = 1;
 
 const defaultTaskColors = {
   "Desk": "#4da3ff",
@@ -337,6 +338,51 @@ function getStaff() {
   return JSON.parse(localStorage.getItem("shiftPlannerStaff")) || [];
 }
 
+function mapApiStaffToUi(staff) {
+  const id = Number(staff?.staffId ?? staff?.id);
+  if (!Number.isFinite(id)) {
+    return null;
+  }
+
+  return {
+    id,
+    name: staff?.name || "",
+    title: staff?.title || ""
+  };
+}
+
+function normalizeApiStaffList(staffList) {
+  if (!Array.isArray(staffList)) {
+    return [];
+  }
+
+  return staffList
+    .map(mapApiStaffToUi)
+    .filter(Boolean);
+}
+
+async function fetchAndCacheStaff() {
+  try {
+    const response = await apiFetch("api/staff");
+    if (!response.ok) {
+      throw new Error(`Failed to fetch staff: ${response.status}`);
+    }
+
+    const staffList = normalizeApiStaffList(await response.json());
+    saveStaffList(staffList);
+
+    const dynamicIds = getDynamicStaffIds().filter(id =>
+      staffList.some(staff => staff.id === id)
+    );
+    saveDynamicStaffIds(dynamicIds);
+
+    return staffList;
+  } catch (error) {
+    console.error("Unable to load staff from API.", error);
+    return getStaff();
+  }
+}
+
 function saveStaffList(staffList) {
   localStorage.setItem("shiftPlannerStaff", JSON.stringify(staffList));
 }
@@ -374,8 +420,7 @@ function getFilteredStaff() {
 
   if (query) {
     filteredStaff = staffList.filter(staff =>
-      staff.name.toLowerCase().includes(query) ||
-      staff.title.toLowerCase().includes(query)
+      staff.name.toLowerCase().includes(query)
     );
   }
 
@@ -405,7 +450,7 @@ function renderStaffTable() {
 
   if (staffList.length === 0) {
     const row = document.createElement("tr");
-    row.innerHTML = `<td colspan="3">No staff found.</td>`;
+    row.innerHTML = `<td colspan="2">No staff found.</td>`;
     tbody.appendChild(row);
     return;
   }
@@ -414,7 +459,6 @@ function renderStaffTable() {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${staff.name}</td>
-      <td>${staff.title}</td>
       <td>
         <div class="actions-inline">
           <button class="btn" onclick="editStaff(${staff.id})">Edit</button>
@@ -436,54 +480,62 @@ function openStaffForm() {
 function resetStaffForm() {
   const title = document.getElementById("staffFormTitle");
   const name = document.getElementById("staffName");
-  const staffTitle = document.getElementById("staffTitle");
   const editId = document.getElementById("editingStaffId");
 
   if (title) title.textContent = "Add Staff Member";
   if (name) name.value = "";
-  if (staffTitle) staffTitle.value = "";
   if (editId) editId.value = "";
 }
 
-function saveStaff() {
+async function saveStaff() {
   const id = document.getElementById("editingStaffId")?.value;
   const name = document.getElementById("staffName")?.value.trim();
-  const title = document.getElementById("staffTitle")?.value.trim();
 
-  if (!name || !title) {
-    alert("Please fill in all staff fields.");
+  if (!name) {
+    alert("Please enter a staff name.");
     return;
   }
 
-  let staffList = getStaff();
+  const payload = {
+    name,
+    // Backend upsert model includes title, keep a default value when UI does not edit it.
+    title: "",
+    workingHours: 0,
+    lunchBreak: 0
+  };
 
-  if (id) {
-    staffList = staffList.map(staff =>
-      staff.id == id
-        ? { id: staff.id, name, title }
-        : staff
+  try {
+    const response = id
+      ? await apiFetch(`api/staff/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      })
+      : await apiFetch("api/staff", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+    if (!response.ok) {
+      throw new Error(`Failed to save staff: ${response.status}`);
+    }
+
+    const staffList = normalizeApiStaffList(await response.json());
+    saveStaffList(staffList);
+
+    const currentDynamicIds = getDynamicStaffIds().filter(dynamicId =>
+      staffList.some(staff => staff.id === dynamicId)
     );
-  } else {
-    const newStaff = {
-      id: Date.now(),
-      name,
-      title
-    };
-    staffList.push(newStaff);
+    saveDynamicStaffIds(currentDynamicIds);
+
+    renderStaffTable();
+    resetStaffForm();
+    refreshAllHeaders();
+    populateDutyDropdowns();
+    alert("Staff record saved.");
+  } catch (error) {
+    console.error("Unable to save staff.", error);
+    alert("Failed to save staff record. Please try again.");
   }
-
-  saveStaffList(staffList);
-
-  const currentDynamicIds = getDynamicStaffIds().filter(id =>
-    staffList.some(staff => staff.id === id)
-  );
-  saveDynamicStaffIds(currentDynamicIds);
-
-  renderStaffTable();
-  resetStaffForm();
-  refreshAllHeaders();
-  populateDutyDropdowns();
-  alert("Staff record saved.");
 }
 
 function editStaff(id) {
@@ -492,25 +544,39 @@ function editStaff(id) {
 
   document.getElementById("staffFormTitle").textContent = "Edit Staff Member";
   document.getElementById("staffName").value = staff.name;
-  document.getElementById("staffTitle").value = staff.title;
   document.getElementById("editingStaffId").value = staff.id;
 
   openStaffForm();
 }
 
-function deleteStaff(id) {
+async function deleteStaff(id) {
   const confirmed = confirm("Are you sure you want to delete this staff member?");
   if (!confirmed) return;
 
-  const staffList = getStaff().filter(item => item.id !== id);
-  saveStaffList(staffList);
+  try {
+    const response = await apiFetch(`api/staff/${id}`, {
+      method: "DELETE"
+    });
 
-  const dynamicIds = getDynamicStaffIds().filter(staffId => staffId !== id);
-  saveDynamicStaffIds(dynamicIds);
+    if (!response.ok) {
+      throw new Error(`Failed to delete staff: ${response.status}`);
+    }
 
-  renderStaffTable();
-  refreshAllHeaders();
-  populateDutyDropdowns();
+    const staffList = normalizeApiStaffList(await response.json());
+    saveStaffList(staffList);
+
+    const dynamicIds = getDynamicStaffIds().filter(dynamicId =>
+      staffList.some(staff => staff.id === dynamicId)
+    );
+    saveDynamicStaffIds(dynamicIds);
+
+    renderStaffTable();
+    refreshAllHeaders();
+    populateDutyDropdowns();
+  } catch (error) {
+    console.error("Unable to delete staff.", error);
+    alert("Failed to delete staff member. Please try again.");
+  }
 }
 
 function addStaffColumn() {
@@ -542,16 +608,90 @@ function updateStaffColumn(index, staffId) {
 
 /* ---------------- POLICIES ---------------- */
 
-function savePolicies() {
-  const value = document.getElementById("minimumStaffInput")?.value;
-  localStorage.setItem("shiftPlannerMinimumStaff", value || "3");
-  alert("Policies saved.");
+function normalizePolicy(policy) {
+  const policyId = Number(policy?.policyId ?? policy?.policy_id);
+  const rawParam1 = policy?.param1 ?? policy?.param_1;
+  const param1 = Number(rawParam1);
+
+  return {
+    policyId: Number.isFinite(policyId) ? policyId : null,
+    description: policy?.description || "",
+    param1: Number.isFinite(param1) ? param1 : 0
+  };
 }
 
-function loadPolicies() {
+function getPolicyById(policies, policyId) {
+  if (!Array.isArray(policies) || policies.length === 0) {
+    return null;
+  }
+
+  return policies.find(policy => policy.policyId === policyId) || null;
+}
+
+async function savePolicies() {
   const input = document.getElementById("minimumStaffInput");
+  const parsedValue = Number(input?.value);
+  const nextValue = Number.isFinite(parsedValue) && parsedValue > 0 ? Math.floor(parsedValue) : 3;
+
   if (input) {
-    input.value = localStorage.getItem("shiftPlannerMinimumStaff") || "3";
+    input.value = String(nextValue);
+  }
+
+  localStorage.setItem("shiftPlannerMinimumStaff", String(nextValue));
+
+  try {
+    const response = await apiFetch(`api/policies/${MINIMUM_STAFF_POLICY_ID}`, {
+      method: "PUT",
+      // OpenAPI contract expects snake_case: param_1
+      body: JSON.stringify({ param_1: nextValue })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to save policies: ${response.status}`);
+    }
+
+    const updatedPolicies = (await response.json()).map(normalizePolicy);
+    const minimumStaffPolicy = getPolicyById(updatedPolicies, MINIMUM_STAFF_POLICY_ID);
+    const storedValue = minimumStaffPolicy ? String(minimumStaffPolicy.param1) : String(nextValue);
+
+    if (input) {
+      input.value = storedValue;
+    }
+
+    localStorage.setItem("shiftPlannerMinimumStaff", storedValue);
+    alert("Policies saved.");
+  } catch (error) {
+    console.error("Unable to save policies.", error);
+    alert("Failed to save policy via API. Saved locally only.");
+  }
+}
+
+async function loadPolicies() {
+  const input = document.getElementById("minimumStaffInput");
+  const localValue = localStorage.getItem("shiftPlannerMinimumStaff") || "3";
+
+  if (input) {
+    input.value = localValue;
+  }
+
+  try {
+    const response = await apiFetch("api/policies");
+    if (!response.ok) {
+      throw new Error(`Failed to load policies: ${response.status}`);
+    }
+
+    const policies = (await response.json()).map(normalizePolicy);
+    const minimumStaffPolicy = getPolicyById(policies, MINIMUM_STAFF_POLICY_ID);
+
+    if (minimumStaffPolicy) {
+      const value = String(minimumStaffPolicy.param1);
+      localStorage.setItem("shiftPlannerMinimumStaff", value);
+      if (input) {
+        input.value = value;
+      }
+    }
+  } catch (error) {
+    console.error("Unable to load policies from API.", error);
   }
 }
 
@@ -1012,11 +1152,12 @@ function loadDailyAssignmentsForReview() {
 
 /* ---------------- PAGE INIT ---------------- */
 
-function initManagerPage() {
+async function initManagerPage() {
   initializeStorage();
   applyTaskColors();
+  await fetchAndCacheStaff();
   renderStaffTable();
-  loadPolicies();
+  await loadPolicies();
   renderTaskColors();
 }
 
