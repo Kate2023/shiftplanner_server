@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +23,13 @@ public class ScheduleAssignmentService {
         // delete existing assignments (if any) for the date before saving new ones
         deleteByDate(date);
         return scheduleAssignmentRepository.saveAll(scheduleAssignments);
+    }
+
+    public List<Integer> getDistinctStaffs(List<ScheduleAssignment> scheduleAssignments) {
+        return scheduleAssignments.stream()
+            .map(scheduleAssignment -> scheduleAssignment.getStaff().getStaffId())
+            .distinct()
+            .collect(Collectors.toList());
     }
 
     public void deleteByDate(LocalDate date) {

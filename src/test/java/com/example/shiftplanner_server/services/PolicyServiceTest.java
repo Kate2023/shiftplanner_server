@@ -1,6 +1,9 @@
 package com.example.shiftplanner_server.services;
 
 import com.example.shiftplanner_server.entities.Policy;
+import com.example.shiftplanner_server.entities.ScheduleAssignment;
+import com.example.shiftplanner_server.entities.Staff;
+import com.example.shiftplanner_server.entities.Task;
 import com.example.shiftplanner_server.model.PolicyParam;
 import com.example.shiftplanner_server.model.PolicyUpdateRequest;
 import com.example.shiftplanner_server.repositories.PolicyRepository;
@@ -10,11 +13,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,6 +30,12 @@ class PolicyServiceTest {
 
     @Mock
     private PolicyRepository policyRepository;
+
+    @Mock
+    private ScheduleAssignmentService scheduleAssignmentService;
+
+    @Mock
+    private TaskService taskService;
 
     @InjectMocks
     private PolicyService policyService;
@@ -119,6 +131,188 @@ class PolicyServiceTest {
             () -> policyService.update(99, new PolicyUpdateRequest().param1(5L)));
 
         assertEquals("Policy not found with id: 99", ex.getMessage());
+    }
+
+    @Test
+    void meetPolicy1ReturnsTrueWhenDistinctStaffCountMeetsThreshold() {
+        Policy minStaffPolicy = new Policy();
+        minStaffPolicy.setPolicyId(1);
+        minStaffPolicy.setParam1(2);
+
+        when(scheduleAssignmentService.getDistinctStaffs(any())).thenReturn(List.of(10, 11));
+        when(policyRepository.findById(1)).thenReturn(Optional.of(minStaffPolicy));
+
+        boolean result = policyService.meetPolicy_1(List.of(new ScheduleAssignment()));
+
+        assertTrue(result);
+    }
+
+    @Test
+    void meetPolicy1ReturnsFalseWhenDistinctStaffCountIsBelowThreshold() {
+        Policy minStaffPolicy = new Policy();
+        minStaffPolicy.setPolicyId(1);
+        minStaffPolicy.setParam1(3);
+
+        when(scheduleAssignmentService.getDistinctStaffs(any())).thenReturn(List.of(10, 11));
+        when(policyRepository.findById(1)).thenReturn(Optional.of(minStaffPolicy));
+
+        boolean result = policyService.meetPolicy_1(List.of(new ScheduleAssignment()));
+
+        assertFalse(result);
+    }
+
+    @Test
+    void meetPolicy2ReturnsTrueWhenEachStaffHasAtLeastOneLunchAssignmentInWindow() {
+        Task lunch = task(1, null);
+        Task nonLunch = task(2, null);
+        Staff staffA = staff(100);
+        Staff staffB = staff(101);
+
+        when(taskService.getLLunchTasks()).thenReturn(List.of(lunch));
+
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(staffA, nonLunch, 12, 30),
+            assignment(staffA, lunch, 13, 0),
+            assignment(staffB, lunch, 13, 30)
+        );
+
+        boolean result = policyService.meetPolicy_2(assignments);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void meetPolicy2ReturnsFalseWhenAStaffMemberHasNoLunchAssignmentInWindow() {
+        Task lunch = task(1, null);
+        Task nonLunch = task(2, null);
+        Staff staffA = staff(100);
+        Staff staffB = staff(101);
+
+        when(taskService.getLLunchTasks()).thenReturn(List.of(lunch));
+
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(staffA, lunch, 12, 30),
+            assignment(staffB, nonLunch, 13, 30)
+        );
+
+        boolean result = policyService.meetPolicy_2(assignments);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void meetPolicy3ReturnsTrueWhenEveryTimeslotHasDeskTask() {
+        Task deskTask = task(5, null);
+        Task otherTask = task(6, null);
+        Staff s1 = staff(1);
+        Staff s2 = staff(2);
+
+        when(taskService.getDeskTask()).thenReturn(deskTask);
+
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(s1, deskTask, 9, 0),
+            assignment(s2, otherTask, 9, 0),
+            assignment(s1, otherTask, 10, 0),
+            assignment(s2, deskTask, 10, 0)
+        );
+
+        boolean result = policyService.meetPolicy_3(assignments);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void meetPolicy3ReturnsFalseWhenAnyTimeslotMissesDeskTask() {
+        Task deskTask = task(5, null);
+        Task otherTask = task(6, null);
+        Staff s1 = staff(1);
+        Staff s2 = staff(2);
+
+        when(taskService.getDeskTask()).thenReturn(deskTask);
+
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(s1, deskTask, 9, 0),
+            assignment(s2, otherTask, 9, 0),
+            assignment(s1, otherTask, 10, 0),
+            assignment(s2, otherTask, 10, 0)
+        );
+
+        boolean result = policyService.meetPolicy_3(assignments);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void meetPolicy4ReturnsFalseForConsecutiveRestrictedTasksForSameStaff() {
+        Task checkIn = task(8, null);
+        Staff s1 = staff(1);
+
+        when(taskService.getConsecutiveTasks()).thenReturn(List.of(checkIn));
+
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(s1, checkIn, 9, 0),
+            assignment(s1, checkIn, 10, 0)
+        );
+
+        boolean result = policyService.meetPolicy_4(assignments);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void meetPolicy4ReturnsTrueWhenSameRestrictedTaskIsNotBackToBack() {
+        Task roaming = task(9, null);
+        Staff s1 = staff(1);
+
+        when(taskService.getConsecutiveTasks()).thenReturn(List.of(roaming));
+
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(s1, roaming, 9, 0),
+            assignment(s1, roaming, 11, 0)
+        );
+
+        boolean result = policyService.meetPolicy_4(assignments);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void meetPolicy4ReturnsFalseWhenNextTaskAliasesCurrentRestrictedTask() {
+        Task checkIn = task(2, null);
+        Task lunchCheckIn = task(20, 2);
+        Staff s1 = staff(1);
+
+        when(taskService.getConsecutiveTasks()).thenReturn(List.of(checkIn));
+
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(s1, checkIn, 12, 0),
+            assignment(s1, lunchCheckIn, 13, 0)
+        );
+
+        boolean result = policyService.meetPolicy_4(assignments);
+
+        assertFalse(result);
+    }
+
+    private static Staff staff(int id) {
+        Staff staff = new Staff();
+        staff.setStaffId(id);
+        return staff;
+    }
+
+    private static Task task(int id, Integer alias) {
+        Task task = new Task();
+        task.setTaskId(id);
+        task.setTaskAlias(alias);
+        return task;
+    }
+
+    private static ScheduleAssignment assignment(Staff staff, Task task, int hour, int minute) {
+        ScheduleAssignment assignment = new ScheduleAssignment();
+        assignment.setStaff(staff);
+        assignment.setTask(task);
+        assignment.setTimeSlot(LocalTime.of(hour, minute));
+        return assignment;
     }
 }
 

@@ -31,6 +31,9 @@ public class Task {
     @Column(name = "is_lunch", nullable = false)
     private boolean lunch;
 
+    @Column(name = "task_alias")
+    private Integer taskAlias;
+
     @Column(name = "is_auto", nullable = false)
     private boolean auto;
 

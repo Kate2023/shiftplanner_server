@@ -29,12 +29,16 @@ import java.util.Set;
 public class ScheduleService {
     private static final LocalTime ASSIGNMENT_START_TIME = LocalTime.of(9, 0);
     private static final LocalTime ASSIGNMENT_END_TIME = LocalTime.of(18, 0);
+    private static final String ERROR_FORMAT_1 ="The current shift does not comply with policy %s. Please update the shift until all scheduling rules are satisfied.";
+    private static final String ERROR_FORMAT_2 ="The current shift contains the following scheduling rule conflicts(%s). Please review and edit the shift to resolve all conflicts before proceeding.";
+    private static final String ERROR_FORMAT_3 ="No feasible schedule can be generated with the current scheduling requirements. To generate a valid schedule, please remove one or more scheduling rules, starting with Rule 7 and then Rule 6, Rule 5, and Rule 4, until a feasible solution is found.";
 
     private final ScheduleRepository scheduleRepository;
     private final ScheduleAssignmentService scheduleAssignmentService;
     private final StaffRepository staffRepository;
     private final TaskRepository taskRepository;
     private final PolicyRepository policyRepository;
+    private final PolicyService policyService;
 
     public Optional<Schedule> getByDate(LocalDate date) {
         return scheduleRepository.findByDate(date);
@@ -100,12 +104,39 @@ public class ScheduleService {
                         : assignment.getTask().getTaskId().longValue());
     }
 
-    public ScheduleParam autoScheduleAndSave(LocalDate date, ScheduleParam request) {
+    public ScheduleParam autoScheduleAndSave(LocalDate date, ScheduleParam param) {
+        // Step 1: validation
+        validateRequest(date, param);
+
+        // Step 2: map API request into persistence entities
+        Schedule schedule = toScheduleEntity(date, param);
+        List<ScheduleAssignment> assignments = toScheduleAssignments(param, schedule);
+        List<Integer> staffIds = scheduleAssignmentService.getDistinctStaffs(assignments);
+
+
+        if (!policyService.meetPolicy_1(assignments)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "1"));
+        }
+
+        if (!policyService.meetPolicy_2(assignments)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "2"));
+        }
+
+        if (!policyService.meetPolicy_3(assignments)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "3"));
+        }
+
+        if (!policyService.meetPolicy_4(assignments)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "4"));
+        }
+
+
         // TODO: run auto-scheduling flow and persist result.
         return null;
     }
 
     public ScheduleParam saveByDate(LocalDate date, ScheduleParam param) {
+        // Step 1: validation
         validateRequest(date, param);
 
         // Step 2: map API request into persistence entities
