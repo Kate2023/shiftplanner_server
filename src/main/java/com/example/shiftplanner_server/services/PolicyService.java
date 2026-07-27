@@ -107,9 +107,6 @@ public class PolicyService {
 
     public boolean meetPolicy_3(List<ScheduleAssignment> scheduleAssignments) {
         Integer deskTaskId = taskService.getDeskTask().getTaskId();
-        if (scheduleAssignments == null || scheduleAssignments.isEmpty()) {
-            return false;
-        }
 
         // Group tasks by their timeSlot, then check if every timeSlot contains the deskTask
         return scheduleAssignments.stream()
@@ -140,9 +137,6 @@ public class PolicyService {
      */
 
     public boolean meetPolicy_4(List<ScheduleAssignment> scheduleAssignments) {
-        if (scheduleAssignments == null || scheduleAssignments.isEmpty()) {
-            return true;
-        }
 
         // Fetch the list of restricted tasks and map their IDs to a Set for O(1) lookups
         List<Task> consecutiveTasks = taskService.getConsecutiveTasks();
@@ -196,7 +190,79 @@ public class PolicyService {
                 }
             }
         }
-
         return true; // No violations found across any staff schedules
     }
+
+
+    /**
+     * Check with Policy 5:
+     * At most two staff members should be assigned to the desk or Check-in during each hourly time slot whenever possible.
+     * Each task can have up to two for each timeslot.
+     *
+     * @param scheduleAssignments scheduleAssignments to be checked.
+     * @return if the scheduleAssignments meets the policy requirement.
+     */
+
+    public boolean meetPolicy_5(List<ScheduleAssignment> scheduleAssignments) {
+
+        Integer deskTaskId = taskService.getDeskTask().getTaskId();
+        Integer checkinTaskId = taskService.getCheckinTask().getTaskId();
+
+        // Group tasks by their timeSlot
+        Map<LocalTime, List<ScheduleAssignment>> groupedByTimeSlot = scheduleAssignments.stream()
+            .collect(Collectors.groupingBy(ScheduleAssignment::getTimeSlot));
+
+        // Check if every timeSlot contains more than 2 desk or check-in tasks
+        for (Map.Entry<LocalTime, List<ScheduleAssignment>> entry : groupedByTimeSlot.entrySet()) {
+            List<ScheduleAssignment> assignmentsAtSlot = entry.getValue();
+            long deskCount = assignmentsAtSlot.stream()
+                .filter(sa -> sa.getTask() != null && sa.getTask().getTaskId().equals(deskTaskId))
+                .count();
+            long checkinCount = assignmentsAtSlot.stream()
+                .filter(sa -> sa.getTask() != null && sa.getTask().getTaskId().equals(checkinTaskId))
+                .count();
+
+            if (deskCount > 2 || checkinCount > 2) {
+                return false;
+            }
+        }
+        return true; // No violations found across any staff schedules
+    }
+
+    /**
+     * Check with Policy 6:
+     * Staff members working an eight-hour shift (no Block) must be allocated at least one Optional (unassigned) time slot during the day.
+     *
+     * @param scheduleAssignments scheduleAssignments to be checked.
+     * @return if the scheduleAssignments meets the policy requirement.
+     */
+
+    public boolean meetPolicy_6(List<ScheduleAssignment> scheduleAssignments) {
+        Integer blockTaskId = taskService.getBlockTask().getTaskId();
+        Integer optionalTaskId = taskService.getOptionalTask().getTaskId();
+
+        // Step 1: Group assignments by Staff
+        Map<Staff, List<ScheduleAssignment>> staffSchedules = scheduleAssignments.stream()
+            .collect(Collectors.groupingBy(ScheduleAssignment::getStaff));
+
+        // Step 2: Check each staff member's assignments
+        for (List<ScheduleAssignment> staffAssignments : staffSchedules.values()) {
+            // Step 3: Check if the staff member has an 8-hour shift without a Block task
+            boolean hasBlockTask = staffAssignments.stream()
+                .anyMatch(sa -> sa.getTask() != null && sa.getTask().getTaskId().equals(blockTaskId));
+
+            if (!hasBlockTask) {
+                // Step 4: Check if the staff member has at least one Optional (unassigned) time slot
+                boolean hasOptionalSlot = staffAssignments.stream()
+                    .anyMatch(sa -> sa.getTask() != null && sa.getTask().getTaskId().equals(optionalTaskId));
+
+                if (!hasOptionalSlot) {
+                    return false; // Found a staff member with an 8-hour shift and no Optional slot
+                }
+            }
+        }
+        return true; // No violations found across any staff schedules
+    }
+
+
 }

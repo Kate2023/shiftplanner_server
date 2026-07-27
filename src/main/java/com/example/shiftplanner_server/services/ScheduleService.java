@@ -111,8 +111,11 @@ public class ScheduleService {
         // Step 2: map API request into persistence entities
         Schedule schedule = toScheduleEntity(date, param);
         List<ScheduleAssignment> assignments = toScheduleAssignments(param, schedule);
-        List<Integer> staffIds = scheduleAssignmentService.getDistinctStaffs(assignments);
+        if (assignments.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Schedule assignment not found");
+        }
 
+        List<Integer> staffIds = scheduleAssignmentService.getDistinctStaffs(assignments);
 
         if (!policyService.meetPolicy_1(assignments)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "1"));
@@ -122,16 +125,26 @@ public class ScheduleService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "2"));
         }
 
-        if (!policyService.meetPolicy_3(assignments)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "3"));
-        }
-
         if (!policyService.meetPolicy_4(assignments)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "4"));
         }
 
+        if (!policyService.meetPolicy_5(assignments)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "5"));
+        }
+
+        if (!policyService.meetPolicy_6(assignments)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "6"));
+        }
+
 
         // TODO: run auto-scheduling flow and persist result.
+
+        // TODO: policy 3 should be done after autoSchedule
+        if (!policyService.meetPolicy_3(assignments)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "3"));
+        }
+
         return null;
     }
 

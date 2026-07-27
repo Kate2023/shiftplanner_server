@@ -23,6 +23,9 @@ public class TaskService {
     private final List<Task> LUNCH_TASKS = new ArrayList<>();
 
     private Task DESK_TASK;
+    private Task CHECKIN_TASK;
+    private Task BLOCK_TASK;
+    private Task OPTIONAL_TASK;
 
     public List<Task> getAll() {
         return taskRepository.findAll();
@@ -54,6 +57,36 @@ public class TaskService {
                 .orElseThrow(() -> new RuntimeException("Desk task not found"));
         }
         return DESK_TASK;
+    }
+
+    public Task getCheckinTask() {
+        if (CHECKIN_TASK == null) {
+            CHECKIN_TASK = getAll().stream()
+                .filter(task -> task.getTaskName().toLowerCase().contains("check-in"))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Check-in task not found"));
+        }
+        return CHECKIN_TASK;
+    }
+
+    public Task getBlockTask() {
+        if (BLOCK_TASK == null) {
+            BLOCK_TASK = getAll().stream()
+                .filter(task -> task.getTaskName().toLowerCase().contains("block"))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Block task not found"));
+        }
+        return BLOCK_TASK;
+    }
+
+    public Task getOptionalTask() {
+        if (OPTIONAL_TASK == null) {
+            OPTIONAL_TASK = getAll().stream()
+                .filter(task -> task.getTaskName().toLowerCase().contains("optional"))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Optional task not found"));
+        }
+        return OPTIONAL_TASK;
     }
 
 }

@@ -294,6 +294,135 @@ class PolicyServiceTest {
         assertFalse(result);
     }
 
+    @Test
+    void meetPolicy5ReturnsTrueWhenDeskAndCheckinAreAtMostTwoPerTimeslot() {
+        Task desk = task(10, null);
+        Task checkin = task(11, null);
+        Task other = task(12, null);
+        Staff s1 = staff(1);
+        Staff s2 = staff(2);
+        Staff s3 = staff(3);
+        Staff s4 = staff(4);
+
+        when(taskService.getDeskTask()).thenReturn(desk);
+        when(taskService.getCheckinTask()).thenReturn(checkin);
+
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(s1, desk, 9, 0),
+            assignment(s2, desk, 9, 0),
+            assignment(s3, checkin, 9, 0),
+            assignment(s4, other, 9, 0),
+            assignment(s1, checkin, 10, 0),
+            assignment(s2, checkin, 10, 0),
+            assignment(s3, desk, 10, 0)
+        );
+
+        boolean result = policyService.meetPolicy_5(assignments);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void meetPolicy5ReturnsFalseWhenDeskCountExceedsTwoInAnyTimeslot() {
+        Task desk = task(10, null);
+        Task checkin = task(11, null);
+
+        when(taskService.getDeskTask()).thenReturn(desk);
+        when(taskService.getCheckinTask()).thenReturn(checkin);
+
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(staff(1), desk, 9, 0),
+            assignment(staff(2), desk, 9, 0),
+            assignment(staff(3), desk, 9, 0)
+        );
+
+        boolean result = policyService.meetPolicy_5(assignments);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void meetPolicy5ReturnsFalseWhenCheckinCountExceedsTwoInAnyTimeslot() {
+        Task desk = task(10, null);
+        Task checkin = task(11, null);
+
+        when(taskService.getDeskTask()).thenReturn(desk);
+        when(taskService.getCheckinTask()).thenReturn(checkin);
+
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(staff(1), checkin, 11, 0),
+            assignment(staff(2), checkin, 11, 0),
+            assignment(staff(3), checkin, 11, 0)
+        );
+
+        boolean result = policyService.meetPolicy_5(assignments);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void meetPolicy6ReturnsTrueWhenStaffWithoutBlockHasOptionalSlot() {
+        Task block = task(30, null);
+        Task optional = task(31, null);
+        Task desk = task(32, null);
+        Staff s1 = staff(1);
+        Staff s2 = staff(2);
+
+        when(taskService.getBlockTask()).thenReturn(block);
+        when(taskService.getOptionalTask()).thenReturn(optional);
+
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(s1, desk, 9, 0),
+            assignment(s1, optional, 10, 0),
+            assignment(s2, desk, 9, 0),
+            assignment(s2, block, 10, 0)
+        );
+
+        boolean result = policyService.meetPolicy_6(assignments);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void meetPolicy6ReturnsFalseWhenStaffWithoutBlockHasNoOptionalSlot() {
+        Task block = task(30, null);
+        Task optional = task(31, null);
+        Task desk = task(32, null);
+        Staff s1 = staff(1);
+
+        when(taskService.getBlockTask()).thenReturn(block);
+        when(taskService.getOptionalTask()).thenReturn(optional);
+
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(s1, desk, 9, 0),
+            assignment(s1, desk, 10, 0)
+        );
+
+        boolean result = policyService.meetPolicy_6(assignments);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void meetPolicy6IgnoresOptionalRequirementWhenStaffHasBlockTask() {
+        Task block = task(30, null);
+        Task optional = task(31, null);
+        Task desk = task(32, null);
+        Staff s1 = staff(1);
+
+        when(taskService.getBlockTask()).thenReturn(block);
+        when(taskService.getOptionalTask()).thenReturn(optional);
+
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(s1, desk, 9, 0),
+            assignment(s1, block, 10, 0)
+        );
+
+        boolean result = policyService.meetPolicy_6(assignments);
+
+        assertTrue(result);
+    }
+
     private static Staff staff(int id) {
         Staff staff = new Staff();
         staff.setStaffId(id);

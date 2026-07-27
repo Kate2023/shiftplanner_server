@@ -123,9 +123,9 @@ class ScheduleServiceTest {
         assertEquals("Normal day", result.getNotes());
         assertEquals(List.of(10L, 20L), result.getPolicies());
         assertEquals(1, result.getAssignments().size());
-        assertEquals(1L, result.getAssignments().get(0).getStaffId());
-        assertEquals("09:00", result.getAssignments().get(0).getTimeSlot());
-        assertEquals(7L, result.getAssignments().get(0).getTaskId());
+        assertEquals(1L, result.getAssignments().getFirst().getStaffId());
+        assertEquals("09:00", result.getAssignments().getFirst().getTimeSlot());
+        assertEquals(7L, result.getAssignments().getFirst().getTaskId());
     }
 
     @Test
@@ -140,6 +140,7 @@ class ScheduleServiceTest {
                 () -> scheduleService.saveByDate(date, request));
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assert ex.getReason() != null;
         assertTrue(ex.getReason().contains("between 09:00 and 18:00"));
         verify(scheduleRepository, never()).save(any(Schedule.class));
     }
@@ -211,7 +212,7 @@ class ScheduleServiceTest {
 
         assertEquals(date.toString(), result.getDate());
         assertEquals(1, result.getAssignments().size());
-        assertEquals("09:00", result.getAssignments().get(0).getTimeSlot());
+        assertEquals("09:00", result.getAssignments().getFirst().getTimeSlot());
         assertEquals(List.of(10L), result.getPolicies());
 
         verify(scheduleAssignmentService).deleteByDate(date);
