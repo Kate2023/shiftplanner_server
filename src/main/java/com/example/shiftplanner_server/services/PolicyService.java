@@ -10,6 +10,8 @@ import com.example.shiftplanner_server.repositories.PolicyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import static com.example.shiftplanner_server.services.ServiceConstant.*;
+
 import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
@@ -23,10 +25,7 @@ public class PolicyService {
     private final PolicyRepository policyRepository;
     private final ScheduleAssignmentService scheduleAssignmentService;
     private final TaskService taskService;
-
-    private final LocalTime start = LocalTime.of(12, 0); // 12:00
-    private final LocalTime end = LocalTime.of(14, 0);   // 14:00
-
+    
     public List<Policy> getAll() {
         return policyRepository.findAll();
     }
@@ -87,8 +86,8 @@ public class PolicyService {
             // Step 3: Check if the staff member has at least one assignment in the lunch period
             boolean hasLunchAssignment = staffAssignments.stream()
                 .anyMatch(scheduleAssignment ->
-                    scheduleAssignment.getTimeSlot().isAfter(start)
-                        && scheduleAssignment.getTimeSlot().isBefore(end)
+                    scheduleAssignment.getTimeSlot().isAfter(LUNCH_START)
+                        && scheduleAssignment.getTimeSlot().isBefore(LUNCH_END)
                         && lunchIds.contains(scheduleAssignment.getTask().getTaskId()));
             if (!hasLunchAssignment) {
                 return false; // Found a staff member without a lunch assignment
@@ -249,7 +248,9 @@ public class PolicyService {
         for (List<ScheduleAssignment> staffAssignments : staffSchedules.values()) {
             // Step 3: Check if the staff member has an 8-hour shift without a Block task
             boolean hasBlockTask = staffAssignments.stream()
-                .anyMatch(sa -> sa.getTask() != null && sa.getTask().getTaskId().equals(blockTaskId));
+                .anyMatch(sa -> sa.getTask() != null
+                    && sa.getTask().getTaskId().equals(blockTaskId)
+                    && sa.getTimeSlot().isBefore(ASSIGNMENT_END));
 
             if (!hasBlockTask) {
                 // Step 4: Check if the staff member has at least one Optional (unassigned) time slot

@@ -175,7 +175,10 @@ class ScheduleServiceTest {
             }
             return result;
         });
-        when(staffRepository.findById(anyInt())).thenAnswer(invocation -> Optional.ofNullable(staffById.get(invocation.getArgument(0))));
+        when(staffRepository.findById(anyInt())).thenAnswer(invocation -> {
+            Integer id = invocation.getArgument(0, Integer.class);
+            return Optional.ofNullable(staffById.get(id));
+        });
 
         when(taskRepository.findAllById(any())).thenReturn(List.of(t10));
         when(taskRepository.findById(10)).thenReturn(Optional.of(t10));

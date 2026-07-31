@@ -11,6 +11,7 @@ import com.example.shiftplanner_server.repositories.ScheduleRepository;
 import com.example.shiftplanner_server.repositories.StaffRepository;
 import com.example.shiftplanner_server.repositories.TaskRepository;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,17 +19,15 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.example.shiftplanner_server.services.ServiceConstant.ASSIGNMENT_END;
+import static com.example.shiftplanner_server.services.ServiceConstant.ASSIGNMENT_START;
 
 @Service
 @RequiredArgsConstructor
 public class ScheduleService {
-    private static final LocalTime ASSIGNMENT_START_TIME = LocalTime.of(9, 0);
-    private static final LocalTime ASSIGNMENT_END_TIME = LocalTime.of(18, 0);
     private static final String ERROR_FORMAT_1 ="The current shift does not comply with policy %s. Please update the shift until all scheduling rules are satisfied.";
     private static final String ERROR_FORMAT_2 ="The current shift contains the following scheduling rule conflicts(%s). Please review and edit the shift to resolve all conflicts before proceeding.";
     private static final String ERROR_FORMAT_3 ="No feasible schedule can be generated with the current scheduling requirements. To generate a valid schedule, please remove one or more scheduling rules, starting with Rule 7 and then Rule 6, Rule 5, and Rule 4, until a feasible solution is found.";
@@ -115,8 +114,89 @@ public class ScheduleService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Schedule assignment not found");
         }
 
-        List<Integer> staffIds = scheduleAssignmentService.getDistinctStaffs(assignments);
+        // Step 3: policy check 1,2,4,5,6. Will do 3 during autoSchedule. 7 isn't mandatory.
+        preAutoPolicyCheck(assignments);
 
+        // Step 4: (autoSchedule) replace Optional with Desk, Check-in, Picking, Roaming or Shelving tasks when possible
+        autoSchedule(assignments);
+
+
+        // TODO: policy 3 should be done after autoSchedule
+        if (!policyService.meetPolicy_3(assignments)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "3"));
+        }
+
+        return null;
+    }
+
+    private void autoSchedule(List<ScheduleAssignment> assignments) {
+        // 1. make sure all staffs have a complete set of timeslots
+        validateStaffTimeSlot(assignments);
+
+        // 2. TODO: replace all tasks with Desk, Check-in, Picking, Roaming or Shelving tasks when possible
+
+    }
+
+    public void validateStaffTimeSlot(List<ScheduleAssignment> scheduleAssignments) {
+        if (scheduleAssignments == null || scheduleAssignments.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Schedule assignments cannot be null or empty");
+        }
+
+        // 1. Define the exact required hourly timeslots from 09:00 to 18:00 (for an 18:00 finish)
+        Set<LocalTime> requiredSlots = new HashSet<>();
+        for (LocalTime lt = ASSIGNMENT_START; lt.isBefore(ASSIGNMENT_END); lt = lt.plusHours(1)) {
+            requiredSlots.add(lt);
+        }
+        requiredSlots.add(ASSIGNMENT_END); // Include the 18:00 slot
+
+
+        // 2. Group the assignments by each individual Staff member
+        Map<Staff, List<ScheduleAssignment>> staffSchedules = scheduleAssignments.stream()
+            .filter(a -> a.getStaff() != null && a.getTimeSlot() != null)
+            .collect(Collectors.groupingBy(ScheduleAssignment::getStaff));
+
+        // If there are no valid staff groupings, validation fails
+        if (staffSchedules.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No valid staff groupings found");
+        }
+
+        // 3. Validate the timeslots for every single staff member
+        for (Map.Entry<Staff, List<ScheduleAssignment>> entry : staffSchedules.entrySet()) {
+            Set<LocalTime> staffSlots = getSlots(entry);
+
+            // Fail if the staff member is missing any of the required hourly slots
+            if (staffSlots.size() != requiredSlots.size() || !staffSlots.containsAll(requiredSlots)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Schedule assignments are missing required time slots for staff member " + entry.getKey().getStaffName());
+            }
+        }
+    }
+
+    private static @NonNull Set<LocalTime> getSlots(Map.Entry<Staff, List<ScheduleAssignment>> entry) {
+        List<ScheduleAssignment> assignments = entry.getValue();
+        Set<LocalTime> staffSlots = new HashSet<>();
+
+        for (ScheduleAssignment assignment : assignments) {
+            LocalTime slot = assignment.getTimeSlot();
+
+            // Fail immediately if the slot is outside the 09:00 - 18:00 boundary
+            if (slot.isBefore(ASSIGNMENT_START) || slot.isAfter(ASSIGNMENT_END)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Schedule assignments contain invalid time slots for staff member " + entry.getKey().getStaffName());
+            }
+
+            // Fail immediately if a duplicate timeslot is found for this staff member
+            if (!staffSlots.add(slot)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Schedule assignments contain duplicate time slots for staff member " + entry.getKey().getStaffName());
+            }
+        }
+        return staffSlots;
+    }
+
+    /**
+     * Check if the assignments violate the policies 1,2,4,5,6.
+     * Policy 3 will be checked after auto. Policy 7 is not mandatory.
+     * @param assignments
+     */
+    private void preAutoPolicyCheck(List<ScheduleAssignment> assignments) {
         if (!policyService.meetPolicy_1(assignments)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "1"));
         }
@@ -136,18 +216,17 @@ public class ScheduleService {
         if (!policyService.meetPolicy_6(assignments)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "6"));
         }
-
-
-        // TODO: run auto-scheduling flow and persist result.
-
-        // TODO: policy 3 should be done after autoSchedule
-        if (!policyService.meetPolicy_3(assignments)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "3"));
-        }
-
-        return null;
     }
 
+    /**
+     * We will save the schedule and assignments for the given date. If a schedule already exists for that date,
+     * it will be replaced with the new one. We won't do the policy check, so that users can save a schedule
+     * that violates the policies, and then fix it later.
+     *
+     * @param date
+     * @param param
+     * @return
+     */
     public ScheduleParam saveByDate(LocalDate date, ScheduleParam param) {
         // Step 1: validation
         validateRequest(date, param);
@@ -239,7 +318,7 @@ public class ScheduleService {
             } catch (DateTimeParseException ex) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid assignment timeSlot: " + assignment.getTimeSlot());
             }
-            if (parsedTime.isBefore(ASSIGNMENT_START_TIME) || parsedTime.isAfter(ASSIGNMENT_END_TIME)) {
+            if (parsedTime.isBefore(ASSIGNMENT_START) || parsedTime.isAfter(ASSIGNMENT_END)) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Assignment timeSlot must be between 09:00 and 18:00 (inclusive): " + assignment.getTimeSlot()

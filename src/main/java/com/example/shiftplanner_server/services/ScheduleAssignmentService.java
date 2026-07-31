@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 public class ScheduleAssignmentService {
     private final ScheduleAssignmentRepository scheduleAssignmentRepository;
 
-
     public List<ScheduleAssignment> getById(Integer id) {
         return scheduleAssignmentRepository.findAllBySchedule_ScheduleId(id);
     }
