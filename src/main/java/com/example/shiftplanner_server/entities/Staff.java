@@ -1,16 +1,12 @@
 package com.example.shiftplanner_server.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 @Entity
 @Table(name = "staff", schema = "sp")
@@ -36,5 +32,17 @@ public class Staff {
     @Column(name = "is_active", nullable = false)
     private boolean active;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Staff staff = (Staff) o;
+        return staffId.equals(staff.staffId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(staffId);
+    }
 }
 

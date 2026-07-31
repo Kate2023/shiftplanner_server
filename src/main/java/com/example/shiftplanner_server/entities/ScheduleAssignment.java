@@ -1,14 +1,6 @@
 package com.example.shiftplanner_server.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,11 +9,11 @@ import java.time.LocalTime;
 
 @Entity
 @Table(
-        name = "schedule_assignments",
-        schema = "sp",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uq_assignment_staff_slot", columnNames = {"schedule_id", "staff_id", "time_slot"})
-        }
+    name = "schedule_assignments",
+    schema = "sp",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uq_assignment_staff_slot", columnNames = {"schedule_id", "staff_id", "time_slot"})
+    }
 )
 @Getter
 @Setter

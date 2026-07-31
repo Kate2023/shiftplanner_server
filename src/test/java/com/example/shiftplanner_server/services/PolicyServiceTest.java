@@ -432,7 +432,9 @@ class PolicyServiceTest {
     private static Task task(int id, Integer alias) {
         Task task = new Task();
         task.setTaskId(id);
-        task.setTaskAlias(alias);
+        if (alias != null) {
+            task.setTaskAlias(task(alias, null));
+        }
         return task;
     }
 

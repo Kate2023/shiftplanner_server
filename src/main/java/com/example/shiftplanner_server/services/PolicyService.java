@@ -74,9 +74,7 @@ public class PolicyService {
      */
 
     public boolean meetPolicy_2(List<ScheduleAssignment> scheduleAssignments) {
-        List<Integer> lunchIds = taskService.getLLunchTasks().stream()
-            .map(Task::getTaskId)
-            .toList();
+        List<Task> lunches = taskService.getLLunchTasks();
 
         // Step 1: Group assignments by Staff
         Map<Staff, List<ScheduleAssignment>> staffSchedules = scheduleAssignments.stream()
@@ -88,7 +86,7 @@ public class PolicyService {
                 .anyMatch(scheduleAssignment ->
                     scheduleAssignment.getTimeSlot().isAfter(LUNCH_START)
                         && scheduleAssignment.getTimeSlot().isBefore(LUNCH_END)
-                        && lunchIds.contains(scheduleAssignment.getTask().getTaskId()));
+                        && lunches.contains(scheduleAssignment.getTask()));
             if (!hasLunchAssignment) {
                 return false; // Found a staff member without a lunch assignment
             }
@@ -105,7 +103,7 @@ public class PolicyService {
      */
 
     public boolean meetPolicy_3(List<ScheduleAssignment> scheduleAssignments) {
-        Integer deskTaskId = taskService.getDeskTask().getTaskId();
+        Task deskTask = taskService.getDeskTask();
 
         // Group tasks by their timeSlot, then check if every timeSlot contains the deskTask
         return scheduleAssignments.stream()
@@ -116,7 +114,7 @@ public class PolicyService {
             .values()
             .stream()
             .allMatch(tasksAtSlot -> tasksAtSlot.stream()
-                .anyMatch(task -> task != null && task.getTaskId().equals(deskTaskId))
+                .anyMatch(task -> task != null && task.equals(deskTask))
             );
     }
 
@@ -142,10 +140,6 @@ public class PolicyService {
         if (consecutiveTasks == null || consecutiveTasks.isEmpty()) {
             return true;
         }
-
-        Set<Integer> restrictedTaskIds = consecutiveTasks.stream()
-            .map(Task::getTaskId)
-            .collect(Collectors.toSet());
 
         // Step 1: Group assignments by Staff
         Map<Staff, List<ScheduleAssignment>> staffSchedules = scheduleAssignments.stream()
@@ -174,12 +168,12 @@ public class PolicyService {
                 }
 
                 // Check if it's the exact same task type by ID
-                if (currentTask.getTaskId().equals(nextTask.getTaskId())
-                    || currentTask.getTaskId().equals(nextTask.getTaskAlias())) {
+                if (currentTask.equals(nextTask)
+                    || currentTask.equals(nextTask.getTaskAlias())) {
 
                     // Check if this task ID is one of the restricted consecutive tasks
-                    if (restrictedTaskIds.contains(currentTask.getTaskId()) ||
-                        restrictedTaskIds.contains(currentTask.getTaskAlias())) {
+                    if (consecutiveTasks.contains(currentTask) ||
+                        consecutiveTasks.contains(currentTask.getTaskAlias())) {
 
                         // Check if the timeslots are exactly consecutive (1 hour apart)
                         if (current.getTimeSlot().plusHours(1).equals(next.getTimeSlot())) {
@@ -203,9 +197,8 @@ public class PolicyService {
      */
 
     public boolean meetPolicy_5(List<ScheduleAssignment> scheduleAssignments) {
-
-        Integer deskTaskId = taskService.getDeskTask().getTaskId();
-        Integer checkinTaskId = taskService.getCheckinTask().getTaskId();
+        Task desk = taskService.getDeskTask();
+        Task checkin = taskService.getCheckinTask();
 
         // Group tasks by their timeSlot
         Map<LocalTime, List<ScheduleAssignment>> groupedByTimeSlot = scheduleAssignments.stream()
@@ -215,10 +208,10 @@ public class PolicyService {
         for (Map.Entry<LocalTime, List<ScheduleAssignment>> entry : groupedByTimeSlot.entrySet()) {
             List<ScheduleAssignment> assignmentsAtSlot = entry.getValue();
             long deskCount = assignmentsAtSlot.stream()
-                .filter(sa -> sa.getTask() != null && sa.getTask().getTaskId().equals(deskTaskId))
+                .filter(sa -> sa.getTask() != null && sa.getTask().equals(desk))
                 .count();
             long checkinCount = assignmentsAtSlot.stream()
-                .filter(sa -> sa.getTask() != null && sa.getTask().getTaskId().equals(checkinTaskId))
+                .filter(sa -> sa.getTask() != null && sa.getTask().equals(checkin))
                 .count();
 
             if (deskCount > 2 || checkinCount > 2) {
@@ -237,8 +230,8 @@ public class PolicyService {
      */
 
     public boolean meetPolicy_6(List<ScheduleAssignment> scheduleAssignments) {
-        Integer blockTaskId = taskService.getBlockTask().getTaskId();
-        Integer optionalTaskId = taskService.getOptionalTask().getTaskId();
+        Task block = taskService.getBlockTask();
+        Task optional = taskService.getOptionalTask();
 
         // Step 1: Group assignments by Staff
         Map<Staff, List<ScheduleAssignment>> staffSchedules = scheduleAssignments.stream()
@@ -249,13 +242,13 @@ public class PolicyService {
             // Step 3: Check if the staff member has an 8-hour shift without a Block task
             boolean hasBlockTask = staffAssignments.stream()
                 .anyMatch(sa -> sa.getTask() != null
-                    && sa.getTask().getTaskId().equals(blockTaskId)
+                    && sa.getTask().equals(block)
                     && sa.getTimeSlot().isBefore(ASSIGNMENT_END));
 
             if (!hasBlockTask) {
                 // Step 4: Check if the staff member has at least one Optional (unassigned) time slot
                 boolean hasOptionalSlot = staffAssignments.stream()
-                    .anyMatch(sa -> sa.getTask() != null && sa.getTask().getTaskId().equals(optionalTaskId));
+                    .anyMatch(sa -> sa.getTask() != null && sa.getTask().equals(optional));
 
                 if (!hasOptionalSlot) {
                     return false; // Found a staff member with an 8-hour shift and no Optional slot

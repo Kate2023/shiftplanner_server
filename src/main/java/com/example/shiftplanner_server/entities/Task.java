@@ -1,14 +1,11 @@
 package com.example.shiftplanner_server.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.Objects;
 
 @Entity
 @Table(name = "tasks", schema = "sp")
@@ -31,11 +28,24 @@ public class Task {
     @Column(name = "is_lunch", nullable = false)
     private boolean lunch;
 
-    @Column(name = "task_alias")
-    private Integer taskAlias;
+    @ManyToOne()
+    @JoinColumn(name = "task_alias")
+    private Task taskAlias;
 
     @Column(name = "is_auto", nullable = false)
     private boolean auto;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Task task = (Task) o;
+        return taskId.equals(task.taskId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(taskId);
+    }
 }
 
