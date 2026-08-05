@@ -26,6 +26,9 @@ public class TaskService {
     private Task CHECKIN_TASK;
     private Task BLOCK_TASK;
     private Task OPTIONAL_TASK;
+    private Task PICKING_TASK;
+    private Task ROAMING_TASK;
+    private Task SHELVING_TASK;
 
     public List<Task> getAll() {
         return taskRepository.findAll();
@@ -89,5 +92,33 @@ public class TaskService {
         return OPTIONAL_TASK;
     }
 
-}
+    public Task getPickingTask() {
+        if (PICKING_TASK == null) {
+            PICKING_TASK = getAll().stream()
+                .filter(task -> task.getTaskName().toLowerCase().contains("picking"))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Picking task not found"));
+        }
+        return PICKING_TASK;
+    }
 
+    public Task getRoamingTask() {
+        if (ROAMING_TASK == null) {
+            ROAMING_TASK = getAll().stream()
+                .filter(task -> task.getTaskName().toLowerCase().contains("roaming"))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Roaming task not found"));
+        }
+        return ROAMING_TASK;
+    }
+
+    public Task getShelvingTask() {
+        if (SHELVING_TASK == null) {
+            SHELVING_TASK = getAll().stream()
+                .filter(task -> task.getTaskName().toLowerCase().contains("shelving"))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Shelving task not found"));
+        }
+        return SHELVING_TASK;
+    }
+}

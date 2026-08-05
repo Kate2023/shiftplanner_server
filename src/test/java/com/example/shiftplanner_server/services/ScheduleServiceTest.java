@@ -207,7 +207,9 @@ class ScheduleServiceTest {
         savedAssignment.setTask(t10);
         savedAssignment.setTimeSlot(LocalTime.of(9, 0));
 
-        when(scheduleRepository.findByDate(date)).thenReturn(Optional.of(existing), Optional.of(saved));
+        when(scheduleRepository.findByDate(date))
+                .thenReturn(Optional.of(existing))
+                .thenReturn(Optional.of(saved));
         when(scheduleRepository.save(any(Schedule.class))).thenReturn(saved);
         when(scheduleAssignmentService.getById(12)).thenReturn(List.of(savedAssignment));
 

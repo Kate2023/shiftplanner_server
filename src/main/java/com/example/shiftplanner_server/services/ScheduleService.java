@@ -1,11 +1,11 @@
 package com.example.shiftplanner_server.services;
 
-import com.example.shiftplanner_server.model.Assignment;
-import com.example.shiftplanner_server.model.ScheduleParam;
 import com.example.shiftplanner_server.entities.Schedule;
 import com.example.shiftplanner_server.entities.ScheduleAssignment;
 import com.example.shiftplanner_server.entities.Staff;
 import com.example.shiftplanner_server.entities.Task;
+import com.example.shiftplanner_server.model.Assignment;
+import com.example.shiftplanner_server.model.ScheduleParam;
 import com.example.shiftplanner_server.repositories.PolicyRepository;
 import com.example.shiftplanner_server.repositories.ScheduleRepository;
 import com.example.shiftplanner_server.repositories.StaffRepository;
@@ -22,15 +22,11 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.example.shiftplanner_server.services.ServiceConstant.ASSIGNMENT_END;
-import static com.example.shiftplanner_server.services.ServiceConstant.ASSIGNMENT_START;
+import static com.example.shiftplanner_server.services.ServiceConstant.*;
 
 @Service
 @RequiredArgsConstructor
 public class ScheduleService {
-    private static final String ERROR_FORMAT_1 ="The current shift does not comply with policy %s. Please update the shift until all scheduling rules are satisfied.";
-    private static final String ERROR_FORMAT_2 ="The current shift contains the following scheduling rule conflicts(%s). Please review and edit the shift to resolve all conflicts before proceeding.";
-    private static final String ERROR_FORMAT_3 ="No feasible schedule can be generated with the current scheduling requirements. To generate a valid schedule, please remove one or more scheduling rules, starting with Rule 7 and then Rule 6, Rule 5, and Rule 4, until a feasible solution is found.";
 
     private final ScheduleRepository scheduleRepository;
     private final ScheduleAssignmentService scheduleAssignmentService;
@@ -53,19 +49,19 @@ public class ScheduleService {
         }
         List<ScheduleAssignment> assignments = scheduleAssignmentService.getById(schedule.getScheduleId());
         return new ScheduleParam()
-                .date(schedule.getDate() != null ? schedule.getDate().toString() : date.toString())
-                .rosterStaffId(staffIdOf(schedule.getRosterStaff()))
-                .bankingStaffId(staffIdOf(schedule.getBankingStaff()))
-                .backupStaffId(staffIdOf(schedule.getBankingBackupStaff()))
-                .inspectionStaffId(staffIdOf(schedule.getBuildingInspector()))
-                .notes(schedule.getNotes())
-                .policies(parsePolicies(schedule.getPolicies()))
-                .assignments(assignments == null
-                        ? List.of()
-                        : assignments.stream()
-                        .filter(Objects::nonNull)
-                        .map(this::toAssignmentParam)
-                        .toList());
+            .date(schedule.getDate() != null ? schedule.getDate().toString() : date.toString())
+            .rosterStaffId(staffIdOf(schedule.getRosterStaff()))
+            .bankingStaffId(staffIdOf(schedule.getBankingStaff()))
+            .backupStaffId(staffIdOf(schedule.getBankingBackupStaff()))
+            .inspectionStaffId(staffIdOf(schedule.getBuildingInspector()))
+            .notes(schedule.getNotes())
+            .policies(parsePolicies(schedule.getPolicies()))
+            .assignments(assignments == null
+                ? List.of()
+                : assignments.stream()
+                .filter(Objects::nonNull)
+                .map(this::toAssignmentParam)
+                .toList());
     }
 
     private Long staffIdOf(com.example.shiftplanner_server.entities.Staff staff) {
@@ -77,11 +73,11 @@ public class ScheduleService {
             return List.of();
         }
         return Arrays.stream(policies.split(","))
-                .map(String::trim)
-                .filter(token -> !token.isEmpty())
-                .map(this::parsePolicyId)
-                .filter(Objects::nonNull)
-                .toList();
+            .map(String::trim)
+            .filter(token -> !token.isEmpty())
+            .map(this::parsePolicyId)
+            .filter(Objects::nonNull)
+            .toList();
     }
 
     private Long parsePolicyId(String token) {
@@ -94,13 +90,13 @@ public class ScheduleService {
 
     private Assignment toAssignmentParam(ScheduleAssignment assignment) {
         return new Assignment()
-                .staffId(assignment.getStaff() == null || assignment.getStaff().getStaffId() == null
-                        ? null
-                        : assignment.getStaff().getStaffId().longValue())
-                .timeSlot(assignment.getTimeSlot() == null ? null : assignment.getTimeSlot().toString())
-                .taskId(assignment.getTask() == null || assignment.getTask().getTaskId() == null
-                        ? null
-                        : assignment.getTask().getTaskId().longValue());
+            .staffId(assignment.getStaff() == null || assignment.getStaff().getStaffId() == null
+                ? null
+                : assignment.getStaff().getStaffId().longValue())
+            .timeSlot(assignment.getTimeSlot() == null ? null : assignment.getTimeSlot().toString())
+            .taskId(assignment.getTask() == null || assignment.getTask().getTaskId() == null
+                ? null
+                : assignment.getTask().getTaskId().longValue());
     }
 
     public ScheduleParam autoScheduleAndSave(LocalDate date, ScheduleParam param) {
@@ -127,14 +123,6 @@ public class ScheduleService {
         }
 
         return null;
-    }
-
-    private void autoSchedule(List<ScheduleAssignment> assignments) {
-        // 1. make sure all staffs have a complete set of timeslots
-        validateStaffTimeSlot(assignments);
-
-        // 2. TODO: replace all tasks with Desk, Check-in, Picking, Roaming or Shelving tasks when possible
-
     }
 
     public void validateStaffTimeSlot(List<ScheduleAssignment> scheduleAssignments) {
@@ -194,6 +182,7 @@ public class ScheduleService {
     /**
      * Check if the assignments violate the policies 1,2,4,5,6.
      * Policy 3 will be checked after auto. Policy 7 is not mandatory.
+     *
      * @param assignments
      */
     private void preAutoPolicyCheck(List<ScheduleAssignment> assignments) {
@@ -283,10 +272,10 @@ public class ScheduleService {
 
     private void validateStaffIds(ScheduleParam param) {
         Set<Integer> ids = Set.of(
-                toIntId(param.getRosterStaffId()),
-                toIntId(param.getBankingStaffId()),
-                toIntId(param.getBackupStaffId()),
-                toIntId(param.getInspectionStaffId())
+            toIntId(param.getRosterStaffId()),
+            toIntId(param.getBankingStaffId()),
+            toIntId(param.getBackupStaffId()),
+            toIntId(param.getInspectionStaffId())
         );
         if (staffRepository.findAllById(ids).size() != ids.size()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "One or more role staff IDs do not exist");
@@ -296,13 +285,13 @@ public class ScheduleService {
     private void validateAssignments(List<Assignment> assignments) {
         List<Assignment> safeAssignments = assignments == null ? List.of() : assignments;
         Set<Integer> staffIds = safeAssignments.stream()
-                .map(Assignment::getStaffId)
-                .map(this::toIntId)
-                .collect(java.util.stream.Collectors.toSet());
+            .map(Assignment::getStaffId)
+            .map(this::toIntId)
+            .collect(java.util.stream.Collectors.toSet());
         Set<Integer> taskIds = safeAssignments.stream()
-                .map(Assignment::getTaskId)
-                .map(this::toIntId)
-                .collect(java.util.stream.Collectors.toSet());
+            .map(Assignment::getTaskId)
+            .map(this::toIntId)
+            .collect(java.util.stream.Collectors.toSet());
 
         if (!staffIds.isEmpty() && staffRepository.findAllById(staffIds).size() != staffIds.size()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "One or more assignment staff IDs do not exist");
@@ -320,8 +309,8 @@ public class ScheduleService {
             }
             if (parsedTime.isBefore(ASSIGNMENT_START) || parsedTime.isAfter(ASSIGNMENT_END)) {
                 throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Assignment timeSlot must be between 09:00 and 18:00 (inclusive): " + assignment.getTimeSlot()
+                    HttpStatus.BAD_REQUEST,
+                    "Assignment timeSlot must be between 09:00 and 18:00 (inclusive): " + assignment.getTimeSlot()
                 );
             }
         }
@@ -332,16 +321,16 @@ public class ScheduleService {
         schedule.setDate(date);
         schedule.setNotes(param.getNotes());
         schedule.setRosterStaff(staffRepository.findById(toIntId(param.getRosterStaffId()))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid roster staff")));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid roster staff")));
         schedule.setBankingStaff(staffRepository.findById(toIntId(param.getBankingStaffId()))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid banking staff")));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid banking staff")));
         schedule.setBankingBackupStaff(staffRepository.findById(toIntId(param.getBackupStaffId()))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid backup staff")));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid backup staff")));
         schedule.setBuildingInspector(staffRepository.findById(toIntId(param.getInspectionStaffId()))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid inspection staff")));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid inspection staff")));
         schedule.setPolicies((param.getPolicies() == null ? List.<Long>of() : param.getPolicies()).stream()
-                .map(String::valueOf)
-                .collect(java.util.stream.Collectors.joining(",")));
+            .map(String::valueOf)
+            .collect(java.util.stream.Collectors.joining(",")));
         return schedule;
     }
 
@@ -349,9 +338,9 @@ public class ScheduleService {
         List<Assignment> safeAssignments = param.getAssignments() == null ? List.of() : param.getAssignments();
         return safeAssignments.stream().map(assignmentParam -> {
             Staff staff = staffRepository.findById(toIntId(assignmentParam.getStaffId()))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid assignment staff"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid assignment staff"));
             Task task = taskRepository.findById(toIntId(assignmentParam.getTaskId()))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid assignment task"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid assignment task"));
 
             ScheduleAssignment assignment = new ScheduleAssignment();
             assignment.setSchedule(schedule);
@@ -371,6 +360,14 @@ public class ScheduleService {
         } catch (ArithmeticException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID out of range: " + id);
         }
+    }
+
+    private void autoSchedule(List<ScheduleAssignment> assignments) {
+        // 1. make sure all staffs have a complete set of timeslots
+        validateStaffTimeSlot(assignments);
+
+        // 2. TODO: replace all tasks with Desk, Check-in, Picking, Roaming or Shelving tasks when possible
+
     }
 }
 
