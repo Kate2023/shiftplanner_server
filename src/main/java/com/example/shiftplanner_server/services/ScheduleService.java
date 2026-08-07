@@ -10,6 +10,7 @@ import com.example.shiftplanner_server.repositories.PolicyRepository;
 import com.example.shiftplanner_server.repositories.ScheduleRepository;
 import com.example.shiftplanner_server.repositories.StaffRepository;
 import com.example.shiftplanner_server.repositories.TaskRepository;
+import com.example.shiftplanner_server.services.auto.AutoService;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.example.shiftplanner_server.services.ServiceConstant.*;
 
@@ -34,12 +36,10 @@ public class ScheduleService {
     private final TaskRepository taskRepository;
     private final PolicyRepository policyRepository;
     private final PolicyService policyService;
+    private final AutoService autoService;
 
     public Optional<Schedule> getByDate(LocalDate date) {
         return scheduleRepository.findByDate(date);
-    }
-
-    public void generate(LocalDate date, Schedule schedule) {
     }
 
     public ScheduleParam getScheduleByDate(LocalDate date) {
@@ -99,6 +99,27 @@ public class ScheduleService {
                 : assignment.getTask().getTaskId().longValue());
     }
 
+    /**
+     * We will save the schedule and assignments for the given date. If a schedule already exists for that date,
+     * it will be replaced with the new one. We won't do the policy check, so that users can save a schedule
+     * that violates the policies, and then fix it later.
+     *
+     * @param date date of the Schedule to be saved
+     * @param param data to be saved
+     * @return saved Schedule
+     */
+    public ScheduleParam saveByDate(LocalDate date, ScheduleParam param) {
+        // Step 1: validation
+        validateRequest(date, param);
+
+        // Step 2: map API request into persistence entities
+        Schedule schedule = toScheduleEntity(date, param);
+        List<ScheduleAssignment> assignments = toScheduleAssignments(param, schedule);
+
+        // Step 3: save and return
+        return saveAndReturnParam(date, schedule, assignments);
+    }
+
     public ScheduleParam autoScheduleAndSave(LocalDate date, ScheduleParam param) {
         // Step 1: validation
         validateRequest(date, param);
@@ -106,23 +127,30 @@ public class ScheduleService {
         // Step 2: map API request into persistence entities
         Schedule schedule = toScheduleEntity(date, param);
         List<ScheduleAssignment> assignments = toScheduleAssignments(param, schedule);
-        if (assignments.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Schedule assignment not found");
-        }
+        validateStaffTimeSlot(assignments);
 
         // Step 3: policy check 1,2,4,5,6. Will do 3 during autoSchedule. 7 isn't mandatory.
-        preAutoPolicyCheck(assignments);
+        preAutoPolicyCheck(assignments, param.getPolicies());
 
         // Step 4: (autoSchedule) replace Optional with Desk, Check-in, Picking, Roaming or Shelving tasks when possible
-        autoSchedule(assignments);
+        List<ScheduleAssignment> result = autoService.autoAssignTasks(assignments, param.getPolicies());
 
+        // Step 5: save and return
+        return saveAndReturnParam(date, schedule, result);
+    }
 
-        // TODO: policy 3 should be done after autoSchedule
-        if (!policyService.meetPolicy_3(assignments)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "3"));
-        }
+    private ScheduleParam saveAndReturnParam(LocalDate date, Schedule schedule, List<ScheduleAssignment> assignments) {
+        // Step 1: replace existing schedule content for this date
+        scheduleAssignmentService.deleteByDate(date);
+        scheduleRepository.findByDate(date).ifPresent(scheduleRepository::delete);
 
-        return null;
+        // Step 2: save schedule first, then attach and save assignments
+        Schedule savedSchedule = scheduleRepository.save(schedule);
+        assignments.forEach(assignment -> assignment.setSchedule(savedSchedule));
+        scheduleAssignmentService.saveToDate(date, assignments);
+
+        // Step 3: return saved view model
+        return getScheduleByDate(date);
     }
 
     public void validateStaffTimeSlot(List<ScheduleAssignment> scheduleAssignments) {
@@ -130,12 +158,12 @@ public class ScheduleService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Schedule assignments cannot be null or empty");
         }
 
-        // 1. Define the exact required hourly timeslots from 09:00 to 18:00 (for an 18:00 finish)
+        // 1. Define the exact required hourly timeSlots from 09:00 to 18:00 (for an 18:00 finish)
         Set<LocalTime> requiredSlots = new HashSet<>();
-        for (LocalTime lt = ASSIGNMENT_START; lt.isBefore(ASSIGNMENT_END); lt = lt.plusHours(1)) {
+        for (LocalTime lt = WORK_START; lt.isBefore(WORK_END); lt = lt.plusHours(1)) {
             requiredSlots.add(lt);
         }
-        requiredSlots.add(ASSIGNMENT_END); // Include the 18:00 slot
+        requiredSlots.add(WORK_END); // Include the 18:00 slot
 
 
         // 2. Group the assignments by each individual Staff member
@@ -148,7 +176,7 @@ public class ScheduleService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No valid staff groupings found");
         }
 
-        // 3. Validate the timeslots for every single staff member
+        // 3. Validate the timeSlots for every single staff member
         for (Map.Entry<Staff, List<ScheduleAssignment>> entry : staffSchedules.entrySet()) {
             Set<LocalTime> staffSlots = getSlots(entry);
 
@@ -167,11 +195,11 @@ public class ScheduleService {
             LocalTime slot = assignment.getTimeSlot();
 
             // Fail immediately if the slot is outside the 09:00 - 18:00 boundary
-            if (slot.isBefore(ASSIGNMENT_START) || slot.isAfter(ASSIGNMENT_END)) {
+            if (slot.isBefore(WORK_START) || slot.isAfter(WORK_END)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Schedule assignments contain invalid time slots for staff member " + entry.getKey().getStaffName());
             }
 
-            // Fail immediately if a duplicate timeslot is found for this staff member
+            // Fail immediately if a duplicate timeSlot is found for this staff member
             if (!staffSlots.add(slot)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Schedule assignments contain duplicate time slots for staff member " + entry.getKey().getStaffName());
             }
@@ -183,58 +211,29 @@ public class ScheduleService {
      * Check if the assignments violate the policies 1,2,4,5,6.
      * Policy 3 will be checked after auto. Policy 7 is not mandatory.
      *
-     * @param assignments
+     * @param assignments scheduleAssignments to be checked.
+     * @param policyIds           list of policy IDs to be checked.
      */
-    private void preAutoPolicyCheck(List<ScheduleAssignment> assignments) {
-        if (!policyService.meetPolicy_1(assignments)) {
+    private void preAutoPolicyCheck(List<ScheduleAssignment> assignments, List<Long> policyIds) {
+        if (!policyService.meetPolicy_1(assignments, policyIds)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "1"));
         }
 
-        if (!policyService.meetPolicy_2(assignments)) {
+        if (!policyService.meetPolicy_2(assignments, policyIds)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "2"));
         }
 
-        if (!policyService.meetPolicy_4(assignments)) {
+        if (!policyService.meetPolicy_4(assignments, policyIds)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "4"));
         }
 
-        if (!policyService.meetPolicy_5(assignments)) {
+        if (!policyService.meetPolicy_5(assignments, policyIds)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "5"));
         }
 
-        if (!policyService.meetPolicy_6(assignments)) {
+        if (!policyService.meetPolicy_6(assignments, policyIds)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "6"));
         }
-    }
-
-    /**
-     * We will save the schedule and assignments for the given date. If a schedule already exists for that date,
-     * it will be replaced with the new one. We won't do the policy check, so that users can save a schedule
-     * that violates the policies, and then fix it later.
-     *
-     * @param date
-     * @param param
-     * @return
-     */
-    public ScheduleParam saveByDate(LocalDate date, ScheduleParam param) {
-        // Step 1: validation
-        validateRequest(date, param);
-
-        // Step 2: map API request into persistence entities
-        Schedule schedule = toScheduleEntity(date, param);
-        List<ScheduleAssignment> assignments = toScheduleAssignments(param, schedule);
-
-        // Step 3: replace existing schedule content for this date
-        scheduleAssignmentService.deleteByDate(date);
-        scheduleRepository.findByDate(date).ifPresent(scheduleRepository::delete);
-
-        // Step 4: save schedule first, then attach and save assignments
-        Schedule savedSchedule = scheduleRepository.save(schedule);
-        assignments.forEach(assignment -> assignment.setSchedule(savedSchedule));
-        scheduleAssignmentService.saveToDate(date, assignments);
-
-        // Step 5: return saved view model
-        return getScheduleByDate(date);
     }
 
     private void validateRequest(LocalDate date, ScheduleParam param) {
@@ -271,12 +270,12 @@ public class ScheduleService {
     }
 
     private void validateStaffIds(ScheduleParam param) {
-        Set<Integer> ids = Set.of(
+        List<Integer> ids = Stream.of(
             toIntId(param.getRosterStaffId()),
             toIntId(param.getBankingStaffId()),
             toIntId(param.getBackupStaffId()),
             toIntId(param.getInspectionStaffId())
-        );
+        ).distinct().toList();
         if (staffRepository.findAllById(ids).size() != ids.size()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "One or more role staff IDs do not exist");
         }
@@ -284,14 +283,16 @@ public class ScheduleService {
 
     private void validateAssignments(List<Assignment> assignments) {
         List<Assignment> safeAssignments = assignments == null ? List.of() : assignments;
-        Set<Integer> staffIds = safeAssignments.stream()
+        List<Integer> staffIds = safeAssignments.stream()
             .map(Assignment::getStaffId)
             .map(this::toIntId)
-            .collect(java.util.stream.Collectors.toSet());
-        Set<Integer> taskIds = safeAssignments.stream()
+            .distinct()
+            .toList();
+        List<Integer> taskIds = safeAssignments.stream()
             .map(Assignment::getTaskId)
             .map(this::toIntId)
-            .collect(java.util.stream.Collectors.toSet());
+            .distinct()
+            .toList();
 
         if (!staffIds.isEmpty() && staffRepository.findAllById(staffIds).size() != staffIds.size()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "One or more assignment staff IDs do not exist");
@@ -307,7 +308,7 @@ public class ScheduleService {
             } catch (DateTimeParseException ex) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid assignment timeSlot: " + assignment.getTimeSlot());
             }
-            if (parsedTime.isBefore(ASSIGNMENT_START) || parsedTime.isAfter(ASSIGNMENT_END)) {
+            if (parsedTime.isBefore(WORK_START) || parsedTime.isAfter(WORK_END)) {
                 throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Assignment timeSlot must be between 09:00 and 18:00 (inclusive): " + assignment.getTimeSlot()
@@ -360,14 +361,6 @@ public class ScheduleService {
         } catch (ArithmeticException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID out of range: " + id);
         }
-    }
-
-    private void autoSchedule(List<ScheduleAssignment> assignments) {
-        // 1. make sure all staffs have a complete set of timeslots
-        validateStaffTimeSlot(assignments);
-
-        // 2. TODO: replace all tasks with Desk, Check-in, Picking, Roaming or Shelving tasks when possible
-
     }
 }
 

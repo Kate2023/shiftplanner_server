@@ -34,7 +34,7 @@ public class TaskService {
         return taskRepository.findAll();
     }
 
-    public List<Task> getLLunchTasks() {
+    public List<Task> getLunchTasks() {
         if (LUNCH_TASKS.isEmpty()) {
             getAll().stream()
                 .filter(task -> task.getTaskName().toLowerCase().contains("lunch"))

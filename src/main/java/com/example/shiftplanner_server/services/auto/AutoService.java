@@ -21,13 +21,27 @@ import static com.example.shiftplanner_server.services.ServiceConstant.*;
 public class AutoService {
     private final TaskService taskService;
 
-    List<ScheduleAssignment> autoAssignTasks(List<ScheduleAssignment> assignments) {
-        AutoData autoDate = new AutoData(assignments, taskService.getDeskTask(), taskService.getCheckinTask());
-        tryFirstStages_0_to_3(autoDate);
-        tryStage_4(autoDate);
+    // 1. The policies priority in the below order:
+    // Policy 4: no consecutive Desk, Check-in, Picking, Roaming or Shelving tasks (must be enforced during the assignment process)
+    // Policy 6: at least 1 optional time slot for 8-hour shifts (must be enforced during the assignment process)
+    // Policy 3: at least 1 desk per hour (if not possible, throw an exception)
+    // Policy 5: at most 2 desk per hour (only if possible)
+    // Policy 7: at least 1 check-in per hour(only if possible)
+    // Policy 5: at most 2 check-in per hour(only if possible)
+
+    // 2.  Implementation Stages
+    // Note: Policies 4 and 6 will be checked all the time during the following stages
+    // Stage 0: do Policy 3
+    // Stage 1: do Policy 5 (2 desk per hour)
+    // Stage 2: do Policy 7
+    // Stage 3: do Policy 5 (2 check-in per hour)
+    // Stage 4: change all Optional time slots to actual tasks (if possible)
+    public List<ScheduleAssignment> autoAssignTasks(List<ScheduleAssignment> assignments, List<Long> policyIds) {
+        AutoData autoData = new AutoData(assignments, policyIds, taskService.getDeskTask(), taskService.getCheckinTask());
+        tryFirstStages_0_to_3(autoData);
+        tryStage_4(autoData);
         return assignments;
     }
-
 
     // 3.3 Implementation: Stage 0 to 3
     void tryFirstStages_0_to_3(AutoData data) {
@@ -41,7 +55,7 @@ public class AutoService {
                 data.stage++;
             } else {
                 // Fail, we need to revert the last successful stage and try again
-                data.resetCurrentStage();
+                data.getCurrentStage().reset();
                 data.stage--; // move back to the previousStage
                 if (data.stage < 0) {
                     // No more stages to revert. Which means there is no possible solution
@@ -49,7 +63,6 @@ public class AutoService {
                         // Cannot find the best possible solution. Try to find a feasible solution
                         tryBest = false;
                         data.stage = 0; // reset to the first stage
-                        continue; // try again
                     } else {
                         // Cannot find a feasible solution, throw an exception
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ERROR_FORMAT_3);
@@ -59,56 +72,58 @@ public class AutoService {
         }
     }
 
-
     // 3.3.3 Implementation of tryStage()
     boolean tryStage(AutoData data, boolean tryBest) {
         Stage stage = data.getCurrentStage();
-        while (stage.currentTime.isBefore(ASSIGNMENT_END)) {
-            // Find a suitable staff member for the current timeslot and task
-            Change change = nextChange(data, stage.currentTime, stage.task, stage.numberOfTasks, stage.currentStaff);
+        while (stage.time.isBefore(WORK_END)) {
+            // Find the next suitable staff member for the current timeSlot and task
+            Change change = nextChange(data, stage);
             if (change != null) {
                 // save and apply the change to the assignments
                 data.applyChange(change);
+                stage.changes.add(change);
                 continue;
             }
-            // If we reach here, it means we couldn't find a suitable staff member for the current timeslot and task.
+            // If we reach here, it means we couldn't find a suitable staff member for the current timeSlot and task.
             if (stage.isMandatory || tryBest) {
                 // Mandatory. We must revert or return false if we cannot revert.
                 if (stage.changes.isEmpty()) {
                     // Cannot revert
                     return false;
                 } else {
-                    // Revert the last change and try the next Staff member for the current timeslot and task.
-                    data.revertLastChange();
+                    // Revert the last change
+                    Change lastChange = stage.changes.pollLast();
+                    data.applyChange(lastChange);
+                    stage.time = lastChange.timeSlot(); // Go back to the last assigned timeSlot to reassign
+                    stage.staff = lastChange.staff(); // Go back to the last assigned staff member to reassign
                     continue;
                 }
             }
-            // Not mandatory. We can skip this timeslot and continue to the next one.
-            stage.currentTime = stage.currentTime.plusHours(1);
+            // Not mandatory. We can skip this timeSlot and continue to the next one.
+            stage.time = stage.time.plusHours(1);
         }
         return true; // Indicate successful assignment for the current stage
     }
 
-
     // 3.3.4 Implementation of nextChange()
-    private Change nextChange(AutoData data, LocalTime timeslot, Task task, int numberOfTasks, Staff currentStaff) {
+    private Change nextChange(AutoData data, Stage stage) {
+
         List<Score> scores = new ArrayList<>();
         for (Staff staff : data.getStaffs()) {
-            if (passPolicyCheck(data, timeslot, task, numberOfTasks, currentStaff)) {
+            if (passPolicyCheck(data, stage, staff)) {
                 // Calculate the score for the staff member based on the number of tasks assigned
-                int scoreValue = calculateScore(data, staff, timeslot, task);
-                scores.add(new Score(staff, scoreValue));
+                scores.add(new Score(staff, calculateScore(data, staff, stage.task)));
             }
         }
 
-        scores.sort(Comparator.comparingInt(Score::value).thenComparing(s -> s.staff().getStaffName()));
+        scores.sort(Comparator.comparingLong(Score::value).thenComparing(s -> s.staff().getStaffName()));
 
         for (int i = 0; i < scores.size(); i++) {
-            // Find the current name in the sorted list
-            if (scores.get(i).staff().getStaffName().equals(currentStaff.getStaffName())) {
+            // Find the current staff member in the sorted list
+            if (scores.get(i).staff().equals(stage.staff)) {
                 // Check if there is an element after it
                 if (i + 1 < scores.size()) {
-                    return new Change(scores.get(i + 1).staff(), timeslot, task); // Return the next staff member in the sorted list
+                    return new Change(scores.get(i + 1).staff(), stage.time, stage.task); // Return the next staff member in the sorted list
                 }
                 return null; // No next staff member available
             }
@@ -116,14 +131,14 @@ public class AutoService {
         return null; // No next staff member available
     }
 
-
     // 3.3.5 Implementation of calculateScore()
-    private int calculateScore(AutoData data, Staff staff, LocalTime timeslot, Task task) {
-        // Implement the logic to calculate the score for a staff member based on the number of tasks assigned and other relevant factors.
-        // Return the calculated score as an integer value.
-        return 0; // Placeholder implementation
+    private long calculateScore(AutoData data, Staff staff, Task task) {
+        // At the moment, we use the number of the tasks that has been assigned to the staff.
+        // In the future, we can modify this one to make it seems more random.
+        return data.assignments.stream()
+            .filter(a -> a.getStaff().equals(staff) && a.getTask().equals(task))
+            .count();
     }
-
 
     /**
      * Stage 4: change all Optional time slots to actual tasks (if possible)
@@ -134,15 +149,15 @@ public class AutoService {
      */
     void tryStage_4(AutoData data) {
         Task optional = taskService.getOptionalTask();
-        // Iterate through all the timeslots and staff members to find Optional time slots
+        // Iterate through all the timeSlots and staff members to find Optional time slots
         for (Staff staff : data.getStaffs()) {
-            for (LocalTime timeslot : data.getAllTimeslots()) {
-                if (data.getTask(staff, timeslot) == optional) {
+            for (LocalTime t = WORK_START; t.isBefore(WORK_END); t = t.plusHours(1)) {
+                if (data.getTask(staff, t) == optional) {
                     // Try to assign a task to the Optional time slot
-                    Task newTask = findSuitableTask(data, staff, timeslot);
+                    Task newTask = findSuitableTask(data, staff, t);
                     if (newTask != null) {
                         // Assign the new task to the Optional time slot
-                        Change change = new Change(staff, timeslot, newTask);
+                        Change change = new Change(staff, t, newTask);
                         data.applyChange(change);
                     }
                 }
@@ -151,10 +166,10 @@ public class AutoService {
     }
 
     // 3.4.2 Implementation of findSuitableTask()
-    private Task findSuitableTask(AutoData data, Staff staff, LocalTime timeslot) {
-        // Check the previous and next timeslots to ensure no consecutive tasks are assigned
-        Task previousTask = data.getTask(staff, timeslot.minusHours(1));
-        Task nextTask = data.getTask(staff, timeslot.plusHours(1));
+    private Task findSuitableTask(AutoData data, Staff staff, LocalTime time) {
+        // Check the previous and next timeSlots to ensure no consecutive tasks are assigned
+        Task previousTask = data.getTask(staff, time.minusHours(1));
+        Task nextTask = data.getTask(staff, time.plusHours(1));
         List<Task> possibleTasks = List.of(taskService.getPickingTask(),
             taskService.getRoamingTask(),
             taskService.getShelvingTask());
@@ -167,13 +182,17 @@ public class AutoService {
     }
 
     // 3.5 Implementation of Policy Check (4 & 6 only)
-    private boolean passPolicyCheck(AutoData data, LocalTime timeslot, Task task, int numberOfTasks, Staff currentStaff) {
-        return passPolicy4(data, timeslot, task, currentStaff) && passPolicy6(data, currentStaff);
+    private boolean passPolicyCheck(AutoData data, Stage stage, Staff staff) {
+        return passPolicy4(data, stage, staff)
+            && passPolicy6(data, staff);
     }
 
-
     // 3.5.1 Implementation of passPolicy4()
-    private boolean passPolicy4(AutoData data, LocalTime timeslot, Task task, Staff currentStaff) {
+    private boolean passPolicy4(AutoData data, Stage stage, Staff staff) {
+        if (!data.policyIds.contains(4L)) {
+            return true; // Policy 4 is not enabled, so we can skip the check
+        }
+
         // Policy 4. A staff member must not be assigned to two consecutive Desk, Check-in, Picking, Roaming or Shelving tasks.
         // lunch/check-in is an alias to check-in,
         // lunch/roaming is an alias to roaming.
@@ -181,8 +200,10 @@ public class AutoService {
         // no lunch/check-in after a check-in task,
         // and no lunch/roaming after a roaming task.
         // And vice versa.
-        if (timeslot.isAfter(ASSIGNMENT_START)) {
-            Task previousTask = findTaskByStaffAndTimeslot(data, currentStaff, timeslot.minusHours(1));
+        LocalTime time = stage.time;
+        Task task = stage.task;
+        if (time.isAfter(WORK_START)) {
+            Task previousTask = data.getTask(staff, time.minusHours(1));
             if (previousTask != null) {
                 if (task.equals(previousTask) || task.equals(previousTask.getTaskAlias())) {
                     return false; // Consecutive tasks violation
@@ -190,8 +211,8 @@ public class AutoService {
             }
         }
 
-        if (timeslot.isBefore(ASSIGNMENT_END)) {
-            Task nextTask = findTaskByStaffAndTimeslot(data, currentStaff, timeslot.plusHours(1));
+        if (time.isBefore(WORK_END)) {
+            Task nextTask = data.getTask(staff, time.plusHours(1));
             if (nextTask != null) {
                 return !nextTask.equals(task) && !nextTask.getTaskAlias().equals(task); // Consecutive tasks violation
             }
@@ -200,24 +221,27 @@ public class AutoService {
     }
 
     // 3.5.2 Implementation of passPolicy6()
-    private boolean passPolicy6(AutoData data, Staff currentStaff) {
+    private boolean passPolicy6(AutoData data, Staff staff) {
+        if (!data.policyIds.contains(6L)) {
+            return true;// Policy 6 is not enabled, so we can skip the check
+        }
+
         // Policy 6. Staff members working an eight-hour shift must be allocated at least one Optional (unassigned) time slot during the day
-        return (!data.getFullTimeStaffs().contains(currentStaff) ||
-            hasTwoOptionalTimeSlot(data, currentStaff));
+        return isPartTime(data, staff) || hasTwoOptionalTimeSlot(data, staff);
     }
 
-    // 3.5.1 Implementation of findTaskByStaffAndTimeslot()
-    private Task findTaskByStaffAndTimeslot(AutoData data, Staff staff, LocalTime timeslot) {
-        // Implement the logic to find the assignment of a specific staff member at a specific timeslot.
-        // Return the assignment if found, null otherwise.
-        return null;
+    // 3.5.3 Implementation of isPartTime()
+    private boolean isPartTime(AutoData data, Staff staff) {
+        Task block = taskService.getBlockTask();
+        return data.assignments.stream()
+            .anyMatch(a -> a.getTask().equals(block) && a.getStaff().equals(staff));
     }
 
-    //3.5.2 Implementation of hasTwoOptionalTimeSlot()
-    private boolean hasTwoOptionalTimeSlot(AutoData data, Staff currentStaff) {
-        // Implement the logic to check if the staff member has at least one Optional time slot during the day.
-        // Return true if the staff member has at least one Optional time slot, false otherwise.
-        return false;
+    //3.5.4 Implementation of hasTwoOptionalTimeSlot()
+    private boolean hasTwoOptionalTimeSlot(AutoData data, Staff staff) {
+        Task optional = taskService.getOptionalTask();
+        return data.assignments.stream()
+            .filter(sa -> sa.getStaff().equals(staff) && sa.getTask().equals(optional))
+            .count() > 1;
     }
-
 }

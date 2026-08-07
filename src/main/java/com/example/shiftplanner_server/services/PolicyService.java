@@ -10,14 +10,13 @@ import com.example.shiftplanner_server.repositories.PolicyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import static com.example.shiftplanner_server.services.ServiceConstant.*;
-
 import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.example.shiftplanner_server.services.ServiceConstant.*;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +24,7 @@ public class PolicyService {
     private final PolicyRepository policyRepository;
     private final ScheduleAssignmentService scheduleAssignmentService;
     private final TaskService taskService;
-    
+
     public List<Policy> getAll() {
         return policyRepository.findAll();
     }
@@ -56,11 +55,15 @@ public class PolicyService {
      * Excluding staff who are on their lunch break, there must be at least {param_1}
      * staff members present in the library at all times.
      *
-     * @param scheduleAssignments scheduleAssignments to be checked.
+     * @param assignments assignments to be checked.
+     * @param policyIds   list of policy IDs to be checked.
      * @return if the number of staffs meets the policy requirement.
      */
-    public boolean meetPolicy_1(List<ScheduleAssignment> scheduleAssignments) {
-        List<Integer> staffIds = scheduleAssignmentService.getDistinctStaffs(scheduleAssignments);
+    public boolean meetPolicy_1(List<ScheduleAssignment> assignments, List<Long> policyIds) {
+        if (policyIds == null || policyIds.isEmpty() || !policyIds.contains(1L)) {
+            return true; // Policy 1 is not applicable
+        }
+        List<Integer> staffIds = scheduleAssignmentService.getDistinctStaffs(assignments);
         return staffIds.size() >= policyRepository.findById(1).orElseThrow().getParam1();
     }
 
@@ -69,15 +72,19 @@ public class PolicyService {
      * Between 12:00 p.m. and 2:00 p.m., every staff member must be allocated one of the four tasks:
      * lunch break, lunch/ check-in, lunch/bell or lunch/roaming.
      *
-     * @param scheduleAssignments scheduleAssignments to be checked.
-     * @return if the scheduleAssignments meets the policy requirement.
+     * @param assignments assignments to be checked.
+     * @param policyIds   list of policy IDs to be checked.
+     * @return if the assignments meets the policy requirement.
      */
 
-    public boolean meetPolicy_2(List<ScheduleAssignment> scheduleAssignments) {
-        List<Task> lunches = taskService.getLLunchTasks();
+    public boolean meetPolicy_2(List<ScheduleAssignment> assignments, List<Long> policyIds) {
+        if (policyIds == null || policyIds.isEmpty() || !policyIds.contains(2L)) {
+            return true; // Policy 2 is not applicable
+        }
+        List<Task> lunches = taskService.getLunchTasks();
 
         // Step 1: Group assignments by Staff
-        Map<Staff, List<ScheduleAssignment>> staffSchedules = scheduleAssignments.stream()
+        Map<Staff, List<ScheduleAssignment>> staffSchedules = assignments.stream()
             .collect(Collectors.groupingBy(ScheduleAssignment::getStaff));
         // Step 2: Check each staff member's assignments
         for (List<ScheduleAssignment> staffAssignments : staffSchedules.values()) {
@@ -98,15 +105,19 @@ public class PolicyService {
      * Check with Policy 3:
      * At least one staff member must be assigned to the service desk during every hourly time slot.
      *
-     * @param scheduleAssignments scheduleAssignments to be checked.
-     * @return if the scheduleAssignments meets the policy requirement.
+     * @param assignments assignments to be checked.
+     * @param policyIds   list of policy IDs to be checked.
+     * @return if the assignments meets the policy requirement.
      */
 
-    public boolean meetPolicy_3(List<ScheduleAssignment> scheduleAssignments) {
+    public boolean meetPolicy_3(List<ScheduleAssignment> assignments, List<Long> policyIds) {
+        if (policyIds == null || policyIds.isEmpty() || !policyIds.contains(3L)) {
+            return true; // Policy 3 is not applicable
+        }
         Task deskTask = taskService.getDeskTask();
 
         // Group tasks by their timeSlot, then check if every timeSlot contains the deskTask
-        return scheduleAssignments.stream()
+        return assignments.stream()
             .collect(Collectors.groupingBy(
                 ScheduleAssignment::getTimeSlot,
                 Collectors.mapping(ScheduleAssignment::getTask, Collectors.toList())
@@ -129,11 +140,15 @@ public class PolicyService {
      * and no lunch/roaming after a roaming task.
      * And vice versa.
      *
-     * @param scheduleAssignments scheduleAssignments to be checked.
-     * @return if the scheduleAssignments meets the policy requirement.
+     * @param assignments assignments to be checked.
+     * @param policyIds   list of policy IDs to be checked.
+     * @return if the assignments meets the policy requirement.
      */
 
-    public boolean meetPolicy_4(List<ScheduleAssignment> scheduleAssignments) {
+    public boolean meetPolicy_4(List<ScheduleAssignment> assignments, List<Long> policyIds) {
+        if (policyIds == null || policyIds.isEmpty() || !policyIds.contains(4L)) {
+            return true; // Policy 4 is not applicable
+        }
 
         // Fetch the list of restricted tasks and map their IDs to a Set for O(1) lookups
         List<Task> consecutiveTasks = taskService.getConsecutiveTasks();
@@ -142,7 +157,7 @@ public class PolicyService {
         }
 
         // Step 1: Group assignments by Staff
-        Map<Staff, List<ScheduleAssignment>> staffSchedules = scheduleAssignments.stream()
+        Map<Staff, List<ScheduleAssignment>> staffSchedules = assignments.stream()
             .collect(Collectors.groupingBy(ScheduleAssignment::getStaff));
 
         // Step 2: Check each staff member's assignments
@@ -175,7 +190,7 @@ public class PolicyService {
                     if (consecutiveTasks.contains(currentTask) ||
                         consecutiveTasks.contains(currentTask.getTaskAlias())) {
 
-                        // Check if the timeslots are exactly consecutive (1 hour apart)
+                        // Check if the timeSlots are exactly consecutive (1 hour apart)
                         if (current.getTimeSlot().plusHours(1).equals(next.getTimeSlot())) {
                             return false; // Found consecutive matching restricted tasks!
                         }
@@ -186,22 +201,26 @@ public class PolicyService {
         return true; // No violations found across any staff schedules
     }
 
-
     /**
      * Check with Policy 5:
      * At most two staff members should be assigned to the desk or Check-in during each hourly time slot whenever possible.
-     * Each task can have up to two for each timeslot.
+     * Each task can have up to two for each timeSlot.
      *
-     * @param scheduleAssignments scheduleAssignments to be checked.
-     * @return if the scheduleAssignments meets the policy requirement.
+     * @param assignments assignments to be checked.
+     * @param policyIds   list of policy IDs to be checked.
+     * @return if the assignments meets the policy requirement.
      */
 
-    public boolean meetPolicy_5(List<ScheduleAssignment> scheduleAssignments) {
+    public boolean meetPolicy_5(List<ScheduleAssignment> assignments, List<Long> policyIds) {
+        if (policyIds == null || policyIds.isEmpty() || !policyIds.contains(5L)) {
+            return true; // Policy 5 is not applicable
+        }
+
         Task desk = taskService.getDeskTask();
         Task checkin = taskService.getCheckinTask();
 
         // Group tasks by their timeSlot
-        Map<LocalTime, List<ScheduleAssignment>> groupedByTimeSlot = scheduleAssignments.stream()
+        Map<LocalTime, List<ScheduleAssignment>> groupedByTimeSlot = assignments.stream()
             .collect(Collectors.groupingBy(ScheduleAssignment::getTimeSlot));
 
         // Check if every timeSlot contains more than 2 desk or check-in tasks
@@ -225,16 +244,21 @@ public class PolicyService {
      * Check with Policy 6:
      * Staff members working an eight-hour shift (no Block) must be allocated at least one Optional (unassigned) time slot during the day.
      *
-     * @param scheduleAssignments scheduleAssignments to be checked.
-     * @return if the scheduleAssignments meets the policy requirement.
+     * @param assignments assignments to be checked.
+     * @param policyIds   list of policy IDs to be checked.
+     * @return if the assignments meets the policy requirement.
      */
 
-    public boolean meetPolicy_6(List<ScheduleAssignment> scheduleAssignments) {
+    public boolean meetPolicy_6(List<ScheduleAssignment> assignments, List<Long> policyIds) {
+        if (policyIds == null || policyIds.isEmpty() || !policyIds.contains(6L)) {
+            return true; // Policy 6 is not applicable
+        }
+
         Task block = taskService.getBlockTask();
         Task optional = taskService.getOptionalTask();
 
         // Step 1: Group assignments by Staff
-        Map<Staff, List<ScheduleAssignment>> staffSchedules = scheduleAssignments.stream()
+        Map<Staff, List<ScheduleAssignment>> staffSchedules = assignments.stream()
             .collect(Collectors.groupingBy(ScheduleAssignment::getStaff));
 
         // Step 2: Check each staff member's assignments
@@ -243,7 +267,7 @@ public class PolicyService {
             boolean hasBlockTask = staffAssignments.stream()
                 .anyMatch(sa -> sa.getTask() != null
                     && sa.getTask().equals(block)
-                    && sa.getTimeSlot().isBefore(ASSIGNMENT_END));
+                    && sa.getTimeSlot().isBefore(WORK_END));
 
             if (!hasBlockTask) {
                 // Step 4: Check if the staff member has at least one Optional (unassigned) time slot
@@ -257,6 +281,4 @@ public class PolicyService {
         }
         return true; // No violations found across any staff schedules
     }
-
-
 }

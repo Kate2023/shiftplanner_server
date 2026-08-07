@@ -5,5 +5,5 @@ import com.example.shiftplanner_server.entities.Task;
 
 import java.time.LocalTime;
 
-public record Change(Staff staff, LocalTime timeslot, Task task) {
+public record Change(Staff staff, LocalTime timeSlot, Task task) {
 }

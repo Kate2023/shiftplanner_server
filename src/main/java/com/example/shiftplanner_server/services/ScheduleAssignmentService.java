@@ -4,6 +4,7 @@ import com.example.shiftplanner_server.entities.ScheduleAssignment;
 import com.example.shiftplanner_server.repositories.ScheduleAssignmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -18,6 +19,7 @@ public class ScheduleAssignmentService {
         return scheduleAssignmentRepository.findAllBySchedule_ScheduleId(id);
     }
 
+    @Transactional
     public List<ScheduleAssignment> saveToDate(LocalDate date, List<ScheduleAssignment> scheduleAssignments) {
         // delete existing assignments (if any) for the date before saving new ones
         deleteByDate(date);

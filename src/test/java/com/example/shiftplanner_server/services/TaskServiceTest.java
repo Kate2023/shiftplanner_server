@@ -53,8 +53,8 @@ class TaskServiceTest {
         Task desk = task(3, "Desk");
         when(taskRepository.findAll()).thenReturn(List.of(lunch, lunchCheckin, desk));
 
-        List<Task> firstCall = taskService.getLLunchTasks();
-        List<Task> secondCall = taskService.getLLunchTasks();
+        List<Task> firstCall = taskService.getLunchTasks();
+        List<Task> secondCall = taskService.getLunchTasks();
 
         assertEquals(2, firstCall.size());
         assertSame(firstCall, secondCall);

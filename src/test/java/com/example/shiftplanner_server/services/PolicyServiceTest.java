@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,7 +53,7 @@ class PolicyServiceTest {
         List<Policy> result = policyService.getAll();
 
         assertEquals(1, result.size());
-        assertEquals("Min staff", result.get(0).getDescription());
+        assertEquals("Min staff", result.getFirst().getDescription());
         verify(policyRepository).findAll();
     }
 
@@ -87,13 +88,13 @@ class PolicyServiceTest {
         List<PolicyParam> result = policyService.getAllParams();
 
         assertEquals(2, result.size());
-        assertEquals(10L, result.get(0).getPolicyId());
-        assertEquals("Max hours", result.get(0).getDescription());
-        assertEquals(40L, result.get(0).getParam1());
+        assertEquals(10L, result.getFirst().getPolicyId());
+        assertEquals("Max hours", result.getFirst().getDescription());
+        assertEquals(40L, result.getFirst().getParam1());
 
-        assertEquals(11L, result.get(1).getPolicyId());
-        assertEquals("Optional rule", result.get(1).getDescription());
-        assertEquals(0L, result.get(1).getParam1());
+        assertEquals(11L, result.getLast().getPolicyId());
+        assertEquals("Optional rule", result.getLast().getDescription());
+        assertEquals(0L, result.getLast().getParam1());
     }
 
     @Test
@@ -119,8 +120,8 @@ class PolicyServiceTest {
         assertEquals(60, target.getParam1());
         verify(policyRepository).save(target);
         assertEquals(1, result.size());
-        assertEquals(7L, result.get(0).getPolicyId());
-        assertEquals(60L, result.get(0).getParam1());
+        assertEquals(7L, result.getFirst().getPolicyId());
+        assertEquals(60L, result.getFirst().getParam1());
     }
 
     @Test
@@ -142,7 +143,7 @@ class PolicyServiceTest {
         when(scheduleAssignmentService.getDistinctStaffs(any())).thenReturn(List.of(10, 11));
         when(policyRepository.findById(1)).thenReturn(Optional.of(minStaffPolicy));
 
-        boolean result = policyService.meetPolicy_1(List.of(new ScheduleAssignment()));
+        boolean result = policyService.meetPolicy_1(List.of(new ScheduleAssignment()), List.of(1L));
 
         assertTrue(result);
     }
@@ -156,9 +157,17 @@ class PolicyServiceTest {
         when(scheduleAssignmentService.getDistinctStaffs(any())).thenReturn(List.of(10, 11));
         when(policyRepository.findById(1)).thenReturn(Optional.of(minStaffPolicy));
 
-        boolean result = policyService.meetPolicy_1(List.of(new ScheduleAssignment()));
+        boolean result = policyService.meetPolicy_1(List.of(new ScheduleAssignment()), List.of(1L));
 
         assertFalse(result);
+    }
+
+    @Test
+    void meetPolicy1ReturnsTrueWhenPolicyIdNotEnabled() {
+        boolean result = policyService.meetPolicy_1(List.of(new ScheduleAssignment()), List.of(2L, 3L));
+
+        assertTrue(result);
+        verifyNoInteractions(scheduleAssignmentService, policyRepository);
     }
 
     @Test
@@ -168,7 +177,7 @@ class PolicyServiceTest {
         Staff staffA = staff(100);
         Staff staffB = staff(101);
 
-        when(taskService.getLLunchTasks()).thenReturn(List.of(lunch));
+        when(taskService.getLunchTasks()).thenReturn(List.of(lunch));
 
         List<ScheduleAssignment> assignments = List.of(
             assignment(staffA, nonLunch, 12, 30),
@@ -176,7 +185,7 @@ class PolicyServiceTest {
             assignment(staffB, lunch, 13, 30)
         );
 
-        boolean result = policyService.meetPolicy_2(assignments);
+        boolean result = policyService.meetPolicy_2(assignments, List.of(2L));
 
         assertTrue(result);
     }
@@ -188,14 +197,14 @@ class PolicyServiceTest {
         Staff staffA = staff(100);
         Staff staffB = staff(101);
 
-        when(taskService.getLLunchTasks()).thenReturn(List.of(lunch));
+        when(taskService.getLunchTasks()).thenReturn(List.of(lunch));
 
         List<ScheduleAssignment> assignments = List.of(
             assignment(staffA, lunch, 12, 30),
             assignment(staffB, nonLunch, 13, 30)
         );
 
-        boolean result = policyService.meetPolicy_2(assignments);
+        boolean result = policyService.meetPolicy_2(assignments, List.of(2L));
 
         assertFalse(result);
     }
@@ -216,7 +225,7 @@ class PolicyServiceTest {
             assignment(s2, deskTask, 10, 0)
         );
 
-        boolean result = policyService.meetPolicy_3(assignments);
+        boolean result = policyService.meetPolicy_3(assignments, List.of(3L));
 
         assertTrue(result);
     }
@@ -237,7 +246,7 @@ class PolicyServiceTest {
             assignment(s2, otherTask, 10, 0)
         );
 
-        boolean result = policyService.meetPolicy_3(assignments);
+        boolean result = policyService.meetPolicy_3(assignments, List.of(3L));
 
         assertFalse(result);
     }
@@ -254,7 +263,7 @@ class PolicyServiceTest {
             assignment(s1, checkIn, 10, 0)
         );
 
-        boolean result = policyService.meetPolicy_4(assignments);
+        boolean result = policyService.meetPolicy_4(assignments, List.of(4L));
 
         assertFalse(result);
     }
@@ -271,7 +280,7 @@ class PolicyServiceTest {
             assignment(s1, roaming, 11, 0)
         );
 
-        boolean result = policyService.meetPolicy_4(assignments);
+        boolean result = policyService.meetPolicy_4(assignments, List.of(4L));
 
         assertTrue(result);
     }
@@ -289,7 +298,7 @@ class PolicyServiceTest {
             assignment(s1, lunchCheckIn, 13, 0)
         );
 
-        boolean result = policyService.meetPolicy_4(assignments);
+        boolean result = policyService.meetPolicy_4(assignments, List.of(4L));
 
         assertFalse(result);
     }
@@ -317,7 +326,7 @@ class PolicyServiceTest {
             assignment(s3, desk, 10, 0)
         );
 
-        boolean result = policyService.meetPolicy_5(assignments);
+        boolean result = policyService.meetPolicy_5(assignments, List.of(5L));
 
         assertTrue(result);
     }
@@ -336,7 +345,7 @@ class PolicyServiceTest {
             assignment(staff(3), desk, 9, 0)
         );
 
-        boolean result = policyService.meetPolicy_5(assignments);
+        boolean result = policyService.meetPolicy_5(assignments, List.of(5L));
 
         assertFalse(result);
     }
@@ -355,7 +364,7 @@ class PolicyServiceTest {
             assignment(staff(3), checkin, 11, 0)
         );
 
-        boolean result = policyService.meetPolicy_5(assignments);
+        boolean result = policyService.meetPolicy_5(assignments, List.of(5L));
 
         assertFalse(result);
     }
@@ -378,7 +387,7 @@ class PolicyServiceTest {
             assignment(s2, block, 10, 0)
         );
 
-        boolean result = policyService.meetPolicy_6(assignments);
+        boolean result = policyService.meetPolicy_6(assignments, List.of(6L));
 
         assertTrue(result);
     }
@@ -398,7 +407,7 @@ class PolicyServiceTest {
             assignment(s1, desk, 10, 0)
         );
 
-        boolean result = policyService.meetPolicy_6(assignments);
+        boolean result = policyService.meetPolicy_6(assignments, List.of(6L));
 
         assertFalse(result);
     }
@@ -418,7 +427,7 @@ class PolicyServiceTest {
             assignment(s1, block, 10, 0)
         );
 
-        boolean result = policyService.meetPolicy_6(assignments);
+        boolean result = policyService.meetPolicy_6(assignments, List.of(6L));
 
         assertTrue(result);
     }
