@@ -9,14 +9,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
-<body onload="initReviewPage()">
+<body>
   <div class="topbar">
     <div class="brand">
       <div class="brand-badge">📋</div>
       <div>Shift Planner — Review Screen</div>
     </div>
     <div class="nav">
-      <button id="reviewSaveBtn" onclick="mockSave('Saved')">Save</button>
       <button onclick="exportShiftScreenAsPDF()">Export PDF</button>
       <button id="reviewEditScheduleBtn" onclick="window.location.href='librarian.html'">Edit Schedule</button>
       <button id="reviewBackBtn" onclick="logout()">Logout</button>
@@ -25,9 +24,9 @@
 
   <div class="container">
     <div class="card" id="reviewScreenExportArea">
-      <div class="schedule-date-row">
+      <div class="schedule-date-row" id="reviewDatePickerRow">
         <label for="reviewDate">Search by date:</label>
-        <input type="date" id="reviewDate" onchange="syncReviewDateToStoredValue()" />
+        <input type="date" id="reviewDate" onchange="loadReviewScheduleByPickedDate()" />
       </div>
 
       <div class="schedule-title">
@@ -80,5 +79,8 @@
   </div>
 
   <script src="script.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", initReviewPage);
+  </script>
 </body>
 </html>

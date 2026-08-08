@@ -33,6 +33,7 @@ public class ScheduleAssignmentService {
             .collect(Collectors.toList());
     }
 
+    @Transactional
     public void deleteByDate(LocalDate date) {
         scheduleAssignmentRepository.deleteAllBySchedule_Date(date);
     }
