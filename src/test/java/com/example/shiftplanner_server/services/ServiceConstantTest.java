@@ -14,7 +14,7 @@ class ServiceConstantTest {
         assertEquals(LocalTime.of(12, 0), ServiceConstant.LUNCH_START);
         assertEquals(LocalTime.of(14, 0), ServiceConstant.LUNCH_END);
         assertEquals(LocalTime.of(9, 0), ServiceConstant.WORK_START);
-        assertEquals(LocalTime.of(18, 0), ServiceConstant.WORK_END);
+        assertEquals(LocalTime.of(17, 0), ServiceConstant.WORK_END);
         assertTrue(ServiceConstant.WORK_START.isBefore(ServiceConstant.WORK_END));
     }
 }

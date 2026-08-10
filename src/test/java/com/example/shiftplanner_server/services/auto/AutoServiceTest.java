@@ -13,6 +13,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalTime;
 import java.util.List;
 
+import static com.example.shiftplanner_server.services.ServiceConstant.WORK_END;
+import static com.example.shiftplanner_server.services.ServiceConstant.WORK_START;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.when;
 
@@ -31,14 +33,22 @@ class AutoServiceTest {
 
         Task optional = task(1);
         Task desk = task(2);
+        Task block = task(7);
         Task picking = task(3);
         Task roaming = task(4);
         Task shelving = task(5);
 
-        ScheduleAssignment optionalSlot = assignment(staff, optional, 9);
-        ScheduleAssignment nextSlot = assignment(staff, desk, 10);
+        List<ScheduleAssignment> assignments = new java.util.ArrayList<>();
+        // AutoService iterates all working-hour slots, so populate a full day for this staff.
+        for (LocalTime time = WORK_START; time.isBefore(WORK_END); time = time.plusHours(1)) {
+            assignments.add(assignment(staff, block, time));
+        }
 
-        AutoData data = new AutoData(List.of(optionalSlot, nextSlot), List.of(), desk, task(6));
+        ScheduleAssignment optionalSlot = assignments.getFirst(); // 09:00
+        optionalSlot.setTask(optional);
+        assignments.get(1).setTask(desk); // 10:00
+
+        AutoData data = new AutoData(assignments, List.of(), desk, task(6));
 
         when(taskService.getOptionalTask()).thenReturn(optional);
         when(taskService.getPickingTask()).thenReturn(picking);
@@ -62,11 +72,11 @@ class AutoServiceTest {
         return task;
     }
 
-    private static ScheduleAssignment assignment(Staff staff, Task task, int hour) {
+    private static ScheduleAssignment assignment(Staff staff, Task task, LocalTime time) {
         ScheduleAssignment assignment = new ScheduleAssignment();
         assignment.setStaff(staff);
         assignment.setTask(task);
-        assignment.setTimeSlot(LocalTime.of(hour, 0));
+        assignment.setTimeSlot(time);
         return assignment;
     }
 }

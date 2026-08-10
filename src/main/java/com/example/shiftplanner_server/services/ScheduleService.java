@@ -159,12 +159,12 @@ public class ScheduleService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Schedule assignments cannot be null or empty");
         }
 
-        // 1. Define the exact required hourly timeSlots from 09:00 to 18:00 (for an 18:00 finish)
+        // 1. Define the exact required hourly timeSlots from 09:00 to 17:00 (for an 17:00 finish)
         Set<LocalTime> requiredSlots = new HashSet<>();
         for (LocalTime lt = WORK_START; lt.isBefore(WORK_END); lt = lt.plusHours(1)) {
             requiredSlots.add(lt);
         }
-        requiredSlots.add(WORK_END); // Include the 18:00 slot
+        requiredSlots.add(WORK_END); // Include the 17:00 slot
 
 
         // 2. Group the assignments by each individual Staff member
@@ -195,7 +195,7 @@ public class ScheduleService {
         for (ScheduleAssignment assignment : assignments) {
             LocalTime slot = assignment.getTimeSlot();
 
-            // Fail immediately if the slot is outside the 09:00 - 18:00 boundary
+            // Fail immediately if the slot is outside the 09:00 - 17:00 boundary
             if (slot.isBefore(WORK_START) || slot.isAfter(WORK_END)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Schedule assignments contain invalid time slots for staff member " + entry.getKey().getStaffName());
             }
@@ -296,7 +296,7 @@ public class ScheduleService {
             if (parsedTime.isBefore(WORK_START) || parsedTime.isAfter(WORK_END)) {
                 throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Assignment timeSlot must be between 09:00 and 18:00 (inclusive): " + assignment.getTimeSlot()
+                    "Assignment timeSlot must be between 09:00 and 17:00 (inclusive): " + assignment.getTimeSlot()
                 );
             }
         }

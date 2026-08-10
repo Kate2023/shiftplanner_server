@@ -141,7 +141,7 @@ class ScheduleServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
         assert ex.getReason() != null;
-        assertTrue(ex.getReason().contains("between 09:00 and 18:00"));
+        assertTrue(ex.getReason().contains("between 09:00 and 17:00"));
         verify(scheduleRepository, never()).save(any(Schedule.class));
     }
 
