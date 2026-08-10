@@ -92,7 +92,7 @@ class AutoDataTest {
 
         AutoData autoData = new AutoData(List.of(target), List.of(), task(30), task(31));
 
-        autoData.applyChange(new Change(staff, slot, newTask));
+        autoData.applyChange(new Change(staff, slot, newTask, oldTask));
 
         assertSame(newTask, target.getTask());
     }
@@ -107,7 +107,7 @@ class AutoDataTest {
 
         AutoData autoData = new AutoData(List.of(existing), List.of(), desk, task(11));
 
-        autoData.applyChange(new Change(staffB, LocalTime.of(9, 0), changed));
+        autoData.applyChange(new Change(staffB, LocalTime.of(9, 0), changed, desk));
 
         assertSame(desk, existing.getTask());
     }

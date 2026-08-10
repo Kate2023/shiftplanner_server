@@ -10,8 +10,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 
@@ -28,11 +30,15 @@ public class ScheduleController {
     }
 
     @PostMapping("/{date}")
-    public ResponseEntity<ScheduleParam> autoScheduleAndSave(
+    public ResponseEntity<ScheduleParam> autoSchedule(
             @PathVariable LocalDate date,
+            @RequestParam(value = "ruleCount", required = false) Integer ruleCount,
             @RequestBody ScheduleParam request
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(scheduleService.autoScheduleAndSave(date, request));
+        if (ruleCount != null && request.getPolicies() != null && ruleCount != request.getPolicies().size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ruleCount does not match selected policies");
+        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(scheduleService.autoSchedule(date, request));
     }
 
     @PutMapping("/{date}")

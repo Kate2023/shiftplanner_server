@@ -2,18 +2,18 @@ package com.example.shiftplanner_server.services;
 
 import com.example.shiftplanner_server.entities.Policy;
 import com.example.shiftplanner_server.entities.ScheduleAssignment;
-import com.example.shiftplanner_server.entities.Staff;
 import com.example.shiftplanner_server.entities.Task;
 import com.example.shiftplanner_server.model.PolicyParam;
 import com.example.shiftplanner_server.model.PolicyUpdateRequest;
 import com.example.shiftplanner_server.repositories.PolicyRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.example.shiftplanner_server.services.ServiceConstant.*;
@@ -57,14 +57,17 @@ public class PolicyService {
      *
      * @param assignments assignments to be checked.
      * @param policyIds   list of policy IDs to be checked.
-     * @return if the number of staffs meets the policy requirement.
      */
-    public boolean meetPolicy_1(List<ScheduleAssignment> assignments, List<Long> policyIds) {
+    public void checkPolicy_1(List<ScheduleAssignment> assignments, List<Long> policyIds) {
         if (policyIds == null || policyIds.isEmpty() || !policyIds.contains(1L)) {
-            return true; // Policy 1 is not applicable
+            return; // Policy 1 is not applicable
         }
         List<Integer> staffIds = scheduleAssignmentService.getDistinctStaffs(assignments);
-        return staffIds.size() >= policyRepository.findById(1).orElseThrow().getParam1();
+        int requiredStaff = policyRepository.findById(1).orElseThrow().getParam1();
+        if (!(staffIds.size() >= requiredStaff)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "1",
+                "Need at least " + requiredStaff + " staff members"));
+        }
     }
 
     /**
@@ -74,31 +77,29 @@ public class PolicyService {
      *
      * @param assignments assignments to be checked.
      * @param policyIds   list of policy IDs to be checked.
-     * @return if the assignments meets the policy requirement.
      */
 
-    public boolean meetPolicy_2(List<ScheduleAssignment> assignments, List<Long> policyIds) {
+    public void checkPolicy_2(List<ScheduleAssignment> assignments, List<Long> policyIds) {
         if (policyIds == null || policyIds.isEmpty() || !policyIds.contains(2L)) {
-            return true; // Policy 2 is not applicable
+            return; // Policy 2 is not applicable
         }
         List<Task> lunches = taskService.getLunchTasks();
 
-        // Step 1: Group assignments by Staff
-        Map<Staff, List<ScheduleAssignment>> staffSchedules = assignments.stream()
-            .collect(Collectors.groupingBy(ScheduleAssignment::getStaff));
-        // Step 2: Check each staff member's assignments
-        for (List<ScheduleAssignment> staffAssignments : staffSchedules.values()) {
-            // Step 3: Check if the staff member has at least one assignment in the lunch period
-            boolean hasLunchAssignment = staffAssignments.stream()
-                .anyMatch(scheduleAssignment ->
-                    scheduleAssignment.getTimeSlot().isAfter(LUNCH_START)
-                        && scheduleAssignment.getTimeSlot().isBefore(LUNCH_END)
-                        && lunches.contains(scheduleAssignment.getTask()));
-            if (!hasLunchAssignment) {
-                return false; // Found a staff member without a lunch assignment
-            }
-        }
-        return true; // All staff members have at least one lunch assignment
+        assignments.stream()
+            .collect(Collectors.groupingBy(ScheduleAssignment::getStaff))
+            .forEach((staff, ssa) -> {
+                boolean hasLunch = ssa.stream().anyMatch(sa ->
+                    !sa.getTimeSlot().isBefore(LUNCH_START)
+                        && sa.getTimeSlot().isBefore(LUNCH_END)
+                        && lunches.contains(sa.getTask())
+                );
+
+                if (!hasLunch) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format(ERROR_FORMAT_1, "2", staff.getStaffName() + " needs to have Lunch"));
+                }
+            });
+
     }
 
     /**
@@ -107,26 +108,25 @@ public class PolicyService {
      *
      * @param assignments assignments to be checked.
      * @param policyIds   list of policy IDs to be checked.
-     * @return if the assignments meets the policy requirement.
      */
 
-    public boolean meetPolicy_3(List<ScheduleAssignment> assignments, List<Long> policyIds) {
+    public void checkPolicy_3(List<ScheduleAssignment> assignments, List<Long> policyIds) {
         if (policyIds == null || policyIds.isEmpty() || !policyIds.contains(3L)) {
-            return true; // Policy 3 is not applicable
+            return; // Policy 3 is not applicable
         }
         Task deskTask = taskService.getDeskTask();
+        Task optionalTask = taskService.getOptionalTask();
 
-        // Group tasks by their timeSlot, then check if every timeSlot contains the deskTask
-        return assignments.stream()
-            .collect(Collectors.groupingBy(
-                ScheduleAssignment::getTimeSlot,
-                Collectors.mapping(ScheduleAssignment::getTask, Collectors.toList())
-            ))
-            .values()
-            .stream()
-            .allMatch(tasksAtSlot -> tasksAtSlot.stream()
-                .anyMatch(task -> task != null && task.equals(deskTask))
-            );
+        // Group tasks by their timeSlot, then check if every timeSlot contains the Desk or Optional task
+        for (LocalTime lt : assignments.stream().map(ScheduleAssignment::getTimeSlot).distinct().toList()) {
+            boolean hasDeskTask = assignments.stream()
+                .anyMatch(sa -> lt.equals(sa.getTimeSlot())
+                    && (deskTask.equals(sa.getTask()) || optionalTask.equals(sa.getTask())));
+            if (lt.isBefore(WORK_END) && !hasDeskTask) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format(ERROR_FORMAT_1, "3", lt + " Service Desk needs people"));
+            }
+        }
     }
 
     /**
@@ -142,63 +142,47 @@ public class PolicyService {
      *
      * @param assignments assignments to be checked.
      * @param policyIds   list of policy IDs to be checked.
-     * @return if the assignments meets the policy requirement.
      */
 
-    public boolean meetPolicy_4(List<ScheduleAssignment> assignments, List<Long> policyIds) {
+    public void checkPolicy_4(List<ScheduleAssignment> assignments, List<Long> policyIds) {
         if (policyIds == null || policyIds.isEmpty() || !policyIds.contains(4L)) {
-            return true; // Policy 4 is not applicable
+            return; // Policy 4 is not applicable
         }
 
         // Fetch the list of restricted tasks and map their IDs to a Set for O(1) lookups
         List<Task> consecutiveTasks = taskService.getConsecutiveTasks();
-        if (consecutiveTasks == null || consecutiveTasks.isEmpty()) {
-            return true;
-        }
 
         // Step 1: Group assignments by Staff
-        Map<Staff, List<ScheduleAssignment>> staffSchedules = assignments.stream()
-            .collect(Collectors.groupingBy(ScheduleAssignment::getStaff));
+        assignments.stream()
+            .sorted(Comparator.comparing(ScheduleAssignment::getTimeSlot))
+            .collect(Collectors.groupingBy(ScheduleAssignment::getStaff))
+            .forEach((staff, ssa) -> {
+                for (int i = 0; i < ssa.size() - 1; i++) {
+                    ScheduleAssignment current = ssa.get(i);
+                    ScheduleAssignment next = ssa.get(i + 1);
+                    Task currentTask = current.getTask();
+                    Task nextTask = next.getTask();
 
-        // Step 2: Check each staff member's assignments
-        for (List<ScheduleAssignment> staffAssignments : staffSchedules.values()) {
+                    // Guard clause to safely skip null tasks or IDs
+                    if (currentTask == null || nextTask == null ||
+                        currentTask.getTaskId() == null || nextTask.getTaskId() == null) {
+                        continue;
+                    }
 
-            // Sort the staff's assignments chronologically by timeSlot
-            List<ScheduleAssignment> sortedAssignments = staffAssignments.stream()
-                .sorted(Comparator.comparing(ScheduleAssignment::getTimeSlot))
-                .toList();
-
-            // Step 3: Compare adjacent, back-to-back assignments
-            for (int i = 0; i < sortedAssignments.size() - 1; i++) {
-                ScheduleAssignment current = sortedAssignments.get(i);
-                ScheduleAssignment next = sortedAssignments.get(i + 1);
-
-                Task currentTask = current.getTask();
-                Task nextTask = next.getTask();
-
-                // Skip if either task or ID is missing
-                if (currentTask == null || nextTask == null ||
-                    currentTask.getTaskId() == null || nextTask.getTaskId() == null) {
-                    continue;
-                }
-
-                // Check if it's the exact same task type by ID
-                if (currentTask.equals(nextTask)
-                    || currentTask.equals(nextTask.getTaskAlias())) {
-
-                    // Check if this task ID is one of the restricted consecutive tasks
-                    if (consecutiveTasks.contains(currentTask) ||
-                        consecutiveTasks.contains(currentTask.getTaskAlias())) {
-
+                    // Check if it's the exact same task type by ID
+                    if ((currentTask.equals(nextTask) || currentTask.equals(nextTask.getTaskAlias()))
+                        // Check if this task ID is one of the restricted consecutive tasks
+                        && (consecutiveTasks.contains(currentTask) || consecutiveTasks.contains(currentTask.getTaskAlias()))
                         // Check if the timeSlots are exactly consecutive (1 hour apart)
-                        if (current.getTimeSlot().plusHours(1).equals(next.getTimeSlot())) {
-                            return false; // Found consecutive matching restricted tasks!
-                        }
+                        && (current.getTimeSlot().plusHours(1).equals(next.getTimeSlot()))) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            String.format(ERROR_FORMAT_1, "4",
+                                current.getStaff().getStaffName() + ". Consecutive tasks:\n"
+                                    + current.getTimeSlot() + " " + currentTask.getTaskName() + "\n"
+                                    + next.getTimeSlot() + " " + nextTask.getTaskName()));
                     }
                 }
-            }
-        }
-        return true; // No violations found across any staff schedules
+            });
     }
 
     /**
@@ -208,36 +192,35 @@ public class PolicyService {
      *
      * @param assignments assignments to be checked.
      * @param policyIds   list of policy IDs to be checked.
-     * @return if the assignments meets the policy requirement.
      */
 
-    public boolean meetPolicy_5(List<ScheduleAssignment> assignments, List<Long> policyIds) {
+    public void checkPolicy_5(List<ScheduleAssignment> assignments, List<Long> policyIds) {
         if (policyIds == null || policyIds.isEmpty() || !policyIds.contains(5L)) {
-            return true; // Policy 5 is not applicable
+            return; // Policy 5 is not applicable
         }
 
         Task desk = taskService.getDeskTask();
         Task checkin = taskService.getCheckinTask();
 
-        // Group tasks by their timeSlot
-        Map<LocalTime, List<ScheduleAssignment>> groupedByTimeSlot = assignments.stream()
-            .collect(Collectors.groupingBy(ScheduleAssignment::getTimeSlot));
+        assignments.stream()
+            .collect(Collectors.groupingBy(ScheduleAssignment::getTimeSlot))
+            .forEach((timeSlot, sat) -> {
+                int count = (int) sat.stream().filter(sa -> desk.equals(sa.getTask())).count();
+                if (count > 2) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format(ERROR_FORMAT_1, "5", timeSlot + " " + count + " people at Service Desk"));
+                }
 
-        // Check if every timeSlot contains more than 2 desk or check-in tasks
-        for (Map.Entry<LocalTime, List<ScheduleAssignment>> entry : groupedByTimeSlot.entrySet()) {
-            List<ScheduleAssignment> assignmentsAtSlot = entry.getValue();
-            long deskCount = assignmentsAtSlot.stream()
-                .filter(sa -> sa.getTask() != null && sa.getTask().equals(desk))
-                .count();
-            long checkinCount = assignmentsAtSlot.stream()
-                .filter(sa -> sa.getTask() != null && sa.getTask().equals(checkin))
-                .count();
-
-            if (deskCount > 2 || checkinCount > 2) {
-                return false;
-            }
-        }
-        return true; // No violations found across any staff schedules
+                count = (int) sat.stream()
+                    .filter(sa -> checkin.equals(sa.getTask())
+                        || (checkin.getTaskAlias() != null
+                        && checkin.getTaskAlias().equals(sa.getTask())))
+                    .count();
+                if (checkin != null && count > 2) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format(ERROR_FORMAT_1, "5", timeSlot + " " + count + " people at Check-in"));
+                }
+            });
     }
 
     /**
@@ -246,39 +229,30 @@ public class PolicyService {
      *
      * @param assignments assignments to be checked.
      * @param policyIds   list of policy IDs to be checked.
-     * @return if the assignments meets the policy requirement.
      */
 
-    public boolean meetPolicy_6(List<ScheduleAssignment> assignments, List<Long> policyIds) {
+    public void checkPolicy_6(List<ScheduleAssignment> assignments, List<Long> policyIds) {
         if (policyIds == null || policyIds.isEmpty() || !policyIds.contains(6L)) {
-            return true; // Policy 6 is not applicable
+            return; // Policy 6 is not applicable
         }
 
         Task block = taskService.getBlockTask();
         Task optional = taskService.getOptionalTask();
 
-        // Step 1: Group assignments by Staff
-        Map<Staff, List<ScheduleAssignment>> staffSchedules = assignments.stream()
-            .collect(Collectors.groupingBy(ScheduleAssignment::getStaff));
+        assignments.stream()
+            .collect(Collectors.groupingBy(ScheduleAssignment::getStaff))
+            .forEach((staff, ssa) -> {
+                boolean hasBlock = ssa.stream()
+                    .anyMatch(sa -> block.equals(sa.getTask()) && sa.getTimeSlot().isBefore(WORK_END));
 
-        // Step 2: Check each staff member's assignments
-        for (List<ScheduleAssignment> staffAssignments : staffSchedules.values()) {
-            // Step 3: Check if the staff member has an 8-hour shift without a Block task
-            boolean hasBlockTask = staffAssignments.stream()
-                .anyMatch(sa -> sa.getTask() != null
-                    && sa.getTask().equals(block)
-                    && sa.getTimeSlot().isBefore(WORK_END));
+                if (!hasBlock) {
+                    boolean hasOptionalSlot = ssa.stream().anyMatch(sa -> optional.equals(sa.getTask()));
 
-            if (!hasBlockTask) {
-                // Step 4: Check if the staff member has at least one Optional (unassigned) time slot
-                boolean hasOptionalSlot = staffAssignments.stream()
-                    .anyMatch(sa -> sa.getTask() != null && sa.getTask().equals(optional));
-
-                if (!hasOptionalSlot) {
-                    return false; // Found a staff member with an 8-hour shift and no Optional slot
+                    if (!hasOptionalSlot) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            String.format(ERROR_FORMAT_1, "6", staff.getStaffName() + " needs an Optional slot"));
+                    }
                 }
-            }
-        }
-        return true; // No violations found across any staff schedules
+            });
     }
 }

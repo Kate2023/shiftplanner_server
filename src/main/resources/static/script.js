@@ -58,6 +58,16 @@ const defaultStaff = [
 
 const defaultShiftDate = "2026-06-10";
 const API_BASE_PATH = "/1.0";
+const AUTO_RULE_MODAL_ID = "autoScheduleRuleModal";
+const AUTO_RULE_LIST_ID = "autoRuleList";
+const AUTO_RULE_SELECT_ALL_ID = "autoRuleSelectAllCheckbox";
+const AUTO_RULE_CONFIRM_ID = "autoRuleConfirmCheckbox";
+const AUTO_RULE_CONFIRM_TEXT_ID = "autoRuleConfirmText";
+const AUTO_RULE_CONFIRM_TOGGLE_ID = "autoRuleConfirmToggle";
+const AUTO_RULE_ITEM_CLASS = "auto-rule-item-checkbox";
+
+let cachedAutoScheduleRules = [];
+let isAutoScheduleInProgress = false;
 
 function buildApiUrl(url) {
     if (/^https?:\/\//i.test(url)) {
@@ -804,6 +814,205 @@ function getPolicyById(policies, policyId) {
     return policies.find(policy => policy.policyId === policyId) || null;
 }
 
+function getDefaultAutoScheduleRules() {
+    return [{
+        policyId: MINIMUM_STAFF_POLICY_ID,
+        description: "Minimum staffing requirement",
+        param1: Number(localStorage.getItem("shiftPlannerMinimumStaff") || "3")
+    }];
+}
+
+async function fetchAutoScheduleRules() {
+    try {
+        const response = await apiFetch("api/policies");
+        if (!response.ok) {
+            return getDefaultAutoScheduleRules();
+        }
+
+        const policies = (await response.json())
+            .map(normalizePolicy)
+            .filter(policy => Number.isFinite(policy.policyId))
+            .sort((a, b) => a.policyId - b.policyId);
+
+        return policies.length > 0 ? policies : getDefaultAutoScheduleRules();
+    } catch (error) {
+        console.error("Unable to load auto-schedule rules.", error);
+        return getDefaultAutoScheduleRules();
+    }
+}
+
+function getAutoRuleModalElements() {
+    return {
+        modal: document.getElementById(AUTO_RULE_MODAL_ID),
+        list: document.getElementById(AUTO_RULE_LIST_ID),
+        selectAll: document.getElementById(AUTO_RULE_SELECT_ALL_ID),
+        confirm: document.getElementById(AUTO_RULE_CONFIRM_ID),
+        confirmText: document.getElementById(AUTO_RULE_CONFIRM_TEXT_ID),
+        confirmToggle: document.getElementById(AUTO_RULE_CONFIRM_TOGGLE_ID)
+    };
+}
+
+function setAutoRuleConfirmLoadingState(isLoading) {
+    const {confirm, selectAll, confirmText, confirmToggle} = getAutoRuleModalElements();
+
+    if (confirm) {
+        confirm.disabled = isLoading;
+    }
+    if (selectAll) {
+        selectAll.disabled = isLoading;
+    }
+
+    getAutoRuleItemCheckboxes().forEach(checkbox => {
+        checkbox.disabled = isLoading;
+    });
+
+    if (confirmText) {
+        confirmText.textContent = isLoading ? "Confirming..." : "Confirm";
+    }
+
+    if (confirmToggle) {
+        confirmToggle.classList.toggle("is-loading", isLoading);
+    }
+}
+
+function buildAutoRuleLabelText(policy) {
+    const fallbackLabel = `Rule ${policy.policyId}`;
+    const description = (policy.description || "").trim();
+    return description ? `${fallbackLabel}: ${description}` : fallbackLabel;
+}
+
+function renderAutoScheduleRuleList(rules) {
+    const {list} = getAutoRuleModalElements();
+    if (!list) return;
+
+    list.innerHTML = "";
+
+    rules.forEach(policy => {
+        const row = document.createElement("label");
+        row.className = "auto-rule-item";
+
+        const text = document.createElement("span");
+        text.textContent = buildAutoRuleLabelText(policy);
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = true;
+        checkbox.className = AUTO_RULE_ITEM_CLASS;
+        checkbox.value = String(policy.policyId);
+        checkbox.addEventListener("change", updateAutoRuleSelectAllState);
+
+        row.appendChild(text);
+        row.appendChild(checkbox);
+        list.appendChild(row);
+    });
+
+    updateAutoRuleSelectAllState();
+}
+
+function getAutoRuleItemCheckboxes() {
+    return Array.from(document.querySelectorAll(`.${AUTO_RULE_ITEM_CLASS}`));
+}
+
+function getSelectedAutoRuleIds() {
+    return getAutoRuleItemCheckboxes()
+        .filter(checkbox => checkbox.checked)
+        .map(checkbox => Number(checkbox.value))
+        .filter(Number.isFinite);
+}
+
+function updateAutoRuleSelectAllState() {
+    const {selectAll} = getAutoRuleModalElements();
+    if (!selectAll) return;
+
+    const checkboxes = getAutoRuleItemCheckboxes();
+    const checkedCount = checkboxes.filter(checkbox => checkbox.checked).length;
+    selectAll.checked = checkboxes.length > 0 && checkedCount === checkboxes.length;
+    selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+}
+
+function handleAutoRuleSelectAllChange() {
+    const {selectAll} = getAutoRuleModalElements();
+    if (!selectAll) return;
+
+    getAutoRuleItemCheckboxes().forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+
+    updateAutoRuleSelectAllState();
+}
+
+async function handleAutoRuleConfirmChange() {
+    const {confirm} = getAutoRuleModalElements();
+    if (!confirm || !confirm.checked) {
+        return;
+    }
+
+    if (isAutoScheduleInProgress) {
+        return;
+    }
+
+    const selectedRuleIds = getSelectedAutoRuleIds();
+    if (selectedRuleIds.length === 0) {
+        alert("Please select at least one scheduling rule.");
+        confirm.checked = false;
+        return;
+    }
+
+    isAutoScheduleInProgress = true;
+    setAutoRuleConfirmLoadingState(true);
+
+    try {
+        await autoScheduleShift(selectedRuleIds);
+    } finally {
+        isAutoScheduleInProgress = false;
+        setAutoRuleConfirmLoadingState(false);
+        confirm.checked = false;
+    }
+}
+
+function initializeAutoScheduleRuleModalEvents() {
+    const {modal, selectAll, confirm} = getAutoRuleModalElements();
+    if (!modal || !selectAll || !confirm || modal.dataset.eventsBound === "true") {
+        return;
+    }
+
+    modal.addEventListener("click", closeAutoScheduleRulePopup);
+    selectAll.addEventListener("change", handleAutoRuleSelectAllChange);
+    confirm.addEventListener("change", () => {
+        void handleAutoRuleConfirmChange();
+    });
+    modal.dataset.eventsBound = "true";
+}
+
+async function openAutoScheduleRulePopup() {
+    const {modal, confirm, selectAll, list} = getAutoRuleModalElements();
+    if (!modal || !confirm || !selectAll || !list) return;
+
+    initializeAutoScheduleRuleModalEvents();
+    confirm.checked = false;
+    selectAll.checked = true;
+    selectAll.indeterminate = false;
+    list.textContent = "Loading rules...";
+
+    cachedAutoScheduleRules = await fetchAutoScheduleRules();
+    renderAutoScheduleRuleList(cachedAutoScheduleRules);
+    setAutoRuleConfirmLoadingState(isAutoScheduleInProgress);
+    modal.classList.remove("hidden");
+}
+
+function closeAutoScheduleRulePopup() {
+    const {modal, confirm} = getAutoRuleModalElements();
+    if (!modal) return;
+    modal.classList.add("hidden");
+    if (confirm) {
+        confirm.checked = false;
+    }
+
+    if (!isAutoScheduleInProgress) {
+        setAutoRuleConfirmLoadingState(false);
+    }
+}
+
 async function loadPolicies() {
     const input = document.getElementById("minimumStaffInput");
     const localValue = localStorage.getItem("shiftPlannerMinimumStaff") || "3";
@@ -1048,8 +1257,57 @@ function resetShift() {
     rescheduleShift();
 }
 
-function autoScheduleShift() {
-    alert("Automatic scheduling will be added later.");
+async function autoScheduleShift(selectedPolicyIds = [MINIMUM_STAFF_POLICY_ID]) {
+    const date = getStoredShiftDate();
+    if (!date) {
+        alert("Please select a date before auto-scheduling.");
+        return;
+    }
+
+    const validPolicyIds = (Array.isArray(selectedPolicyIds) ? selectedPolicyIds : [MINIMUM_STAFF_POLICY_ID])
+        .map(policyId => Number(policyId))
+        .filter(Number.isFinite);
+
+    if (validPolicyIds.length === 0) {
+        alert("Please select at least one scheduling rule.");
+        return;
+    }
+
+    try {
+        const payload = buildScheduleApiPayload(date, validPolicyIds);
+        const response = await apiFetch(`/api/schedules/${encodeURIComponent(date)}?ruleCount=${encodeURIComponent(validPolicyIds.length)}`, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            let reason = `Failed to auto-schedule shift: ${response.status}`;
+            try {
+                const errorBody = await response.json();
+                if (errorBody?.reason) {
+                    reason = errorBody.reason;
+                }
+            } catch (error) {
+                // Keep fallback error message when response body is empty or non-JSON.
+            }
+
+            alert(reason);
+            return;
+        }
+
+        const apiSchedule = await response.json();
+        mapApiScheduleToLocalState(apiSchedule);
+        updateScheduleTitles();
+        buildVisibleCalendars();
+        loadNotes("shiftNotes", "shiftPlannerNotes");
+        populateDutyDropdowns();
+        closeAutoScheduleRulePopup();
+
+        alert(`Shift auto-scheduled for ${date}.`);
+    } catch (error) {
+        console.error("Unable to auto-schedule shift via API.", error);
+        alert("Unable to auto-schedule shift. Please try again.");
+    }
 }
 
 function updateDropdownColor(select, taskName) {
@@ -1237,7 +1495,7 @@ function resolveScheduleStaffColumns(schedule) {
     return allStaff.slice(0, Math.max(columnCount, 1));
 }
 
-function buildScheduleApiPayload(date) {
+function buildScheduleApiPayload(date, policyIds = [MINIMUM_STAFF_POLICY_ID]) {
     const schedule = normalizeScheduleToStaffCount();
     const activeStaff = resolveScheduleStaffColumns(schedule);
     if (activeStaff.length === 0) {
@@ -1248,6 +1506,10 @@ function buildScheduleApiPayload(date) {
     const dailyAssignments = JSON.parse(localStorage.getItem("shiftPlannerDailyAssignments")) || {};
     const notes = document.getElementById("shiftNotes")?.value ?? localStorage.getItem("shiftPlannerNotes") ?? "";
 
+    const normalizedPolicyIds = (Array.isArray(policyIds) ? policyIds : [MINIMUM_STAFF_POLICY_ID])
+        .map(policyId => Number(policyId))
+        .filter(Number.isFinite);
+
     return {
         date,
         rosterStaffId: getStaffIdByName(dailyAssignments.roster) ?? fallbackStaffId,
@@ -1255,7 +1517,7 @@ function buildScheduleApiPayload(date) {
         backupStaffId: getStaffIdByName(dailyAssignments.bankingBackup) ?? fallbackStaffId,
         inspectionStaffId: getStaffIdByName(dailyAssignments.inspection) ?? fallbackStaffId,
         notes,
-        policies: [MINIMUM_STAFF_POLICY_ID],
+        policies: normalizedPolicyIds.length > 0 ? normalizedPolicyIds : [MINIMUM_STAFF_POLICY_ID],
         assignments: buildScheduleAssignmentsPayload(schedule, activeStaff)
     };
 }
@@ -1463,6 +1725,7 @@ async function initManagerPage() {
 async function initLibrarianPage() {
     initializeStorage();
     applyTaskColors();
+    initializeAutoScheduleRuleModalEvents();
     await fetchAndCacheStaff();
     buildVisibleCalendars();
     loadNotes("shiftNotes", "shiftPlannerNotes");

@@ -28,7 +28,7 @@ public class ScheduleAssignmentService {
 
     public List<Integer> getDistinctStaffs(List<ScheduleAssignment> scheduleAssignments) {
         return scheduleAssignments.stream()
-            .map(scheduleAssignment -> scheduleAssignment.getStaff().getStaffId())
+            .map(sa -> sa.getStaff().getStaffId())
             .distinct()
             .collect(Collectors.toList());
     }

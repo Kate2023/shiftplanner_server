@@ -120,7 +120,7 @@ public class ScheduleService {
         return saveAndReturnParam(date, schedule, assignments);
     }
 
-    public ScheduleParam autoScheduleAndSave(LocalDate date, ScheduleParam param) {
+    public ScheduleParam autoSchedule(LocalDate date, ScheduleParam param) {
         // Step 1: validation
         validateRequest(date, param);
 
@@ -135,8 +135,9 @@ public class ScheduleService {
         // Step 4: (autoSchedule) replace Optional with Desk, Check-in, Picking, Roaming or Shelving tasks when possible
         List<ScheduleAssignment> result = autoService.autoAssignTasks(assignments, param.getPolicies());
 
-        // Step 5: save and return
-        return saveAndReturnParam(date, schedule, result);
+        // Step 5: replace param assignments with the result from autoSchedule
+        param.setAssignments(result.stream().map(this::toAssignmentParam).toList());
+        return param;
     }
 
     private ScheduleParam saveAndReturnParam(LocalDate date, Schedule schedule, List<ScheduleAssignment> assignments) {
@@ -215,33 +216,17 @@ public class ScheduleService {
      * @param policyIds           list of policy IDs to be checked.
      */
     private void preAutoPolicyCheck(List<ScheduleAssignment> assignments, List<Long> policyIds) {
-        if (!policyService.meetPolicy_1(assignments, policyIds)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "1"));
-        }
-
-        if (!policyService.meetPolicy_2(assignments, policyIds)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "2"));
-        }
-
-        if (!policyService.meetPolicy_4(assignments, policyIds)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "4"));
-        }
-
-        if (!policyService.meetPolicy_5(assignments, policyIds)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "5"));
-        }
-
-        if (!policyService.meetPolicy_6(assignments, policyIds)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "6"));
-        }
+        policyService.checkPolicy_1(assignments, policyIds);
+        policyService.checkPolicy_2(assignments, policyIds);
+        policyService.checkPolicy_3(assignments, policyIds);
+        policyService.checkPolicy_4(assignments, policyIds);
+        policyService.checkPolicy_5(assignments, policyIds);
+        policyService.checkPolicy_6(assignments, policyIds);
     }
 
     private void validateRequest(LocalDate date, ScheduleParam param) {
         if (date == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Date is required");
-        }
-        if (date.isBefore(LocalDate.now())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Date cannot be earlier than today");
         }
         if (param == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Schedule request is required");

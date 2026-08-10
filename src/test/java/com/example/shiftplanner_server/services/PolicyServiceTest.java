@@ -12,15 +12,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -143,9 +143,7 @@ class PolicyServiceTest {
         when(scheduleAssignmentService.getDistinctStaffs(any())).thenReturn(List.of(10, 11));
         when(policyRepository.findById(1)).thenReturn(Optional.of(minStaffPolicy));
 
-        boolean result = policyService.meetPolicy_1(List.of(new ScheduleAssignment()), List.of(1L));
-
-        assertTrue(result);
+        assertDoesNotThrow(() -> policyService.checkPolicy_1(List.of(new ScheduleAssignment()), List.of(1L)));
     }
 
     @Test
@@ -157,16 +155,13 @@ class PolicyServiceTest {
         when(scheduleAssignmentService.getDistinctStaffs(any())).thenReturn(List.of(10, 11));
         when(policyRepository.findById(1)).thenReturn(Optional.of(minStaffPolicy));
 
-        boolean result = policyService.meetPolicy_1(List.of(new ScheduleAssignment()), List.of(1L));
-
-        assertFalse(result);
+        assertThrows(ResponseStatusException.class,
+            () -> policyService.checkPolicy_1(List.of(new ScheduleAssignment()), List.of(1L)));
     }
 
     @Test
     void meetPolicy1ReturnsTrueWhenPolicyIdNotEnabled() {
-        boolean result = policyService.meetPolicy_1(List.of(new ScheduleAssignment()), List.of(2L, 3L));
-
-        assertTrue(result);
+        assertDoesNotThrow(() -> policyService.checkPolicy_1(List.of(new ScheduleAssignment()), List.of(2L, 3L)));
         verifyNoInteractions(scheduleAssignmentService, policyRepository);
     }
 
@@ -185,9 +180,7 @@ class PolicyServiceTest {
             assignment(staffB, lunch, 13, 30)
         );
 
-        boolean result = policyService.meetPolicy_2(assignments, List.of(2L));
-
-        assertTrue(result);
+        assertDoesNotThrow(() -> policyService.checkPolicy_2(assignments, List.of(2L)));
     }
 
     @Test
@@ -204,19 +197,20 @@ class PolicyServiceTest {
             assignment(staffB, nonLunch, 13, 30)
         );
 
-        boolean result = policyService.meetPolicy_2(assignments, List.of(2L));
-
-        assertFalse(result);
+        assertThrows(ResponseStatusException.class,
+            () -> policyService.checkPolicy_2(assignments, List.of(2L)));
     }
 
     @Test
     void meetPolicy3ReturnsTrueWhenEveryTimeslotHasDeskTask() {
         Task deskTask = task(5, null);
+        Task optionalTask = task(7, null);
         Task otherTask = task(6, null);
         Staff s1 = staff(1);
         Staff s2 = staff(2);
 
         when(taskService.getDeskTask()).thenReturn(deskTask);
+        when(taskService.getOptionalTask()).thenReturn(optionalTask);
 
         List<ScheduleAssignment> assignments = List.of(
             assignment(s1, deskTask, 9, 0),
@@ -225,19 +219,19 @@ class PolicyServiceTest {
             assignment(s2, deskTask, 10, 0)
         );
 
-        boolean result = policyService.meetPolicy_3(assignments, List.of(3L));
-
-        assertTrue(result);
+        assertDoesNotThrow(() -> policyService.checkPolicy_3(assignments, List.of(3L)));
     }
 
     @Test
     void meetPolicy3ReturnsFalseWhenAnyTimeslotMissesDeskTask() {
         Task deskTask = task(5, null);
+        Task optionalTask = task(7, null);
         Task otherTask = task(6, null);
         Staff s1 = staff(1);
         Staff s2 = staff(2);
 
         when(taskService.getDeskTask()).thenReturn(deskTask);
+        when(taskService.getOptionalTask()).thenReturn(optionalTask);
 
         List<ScheduleAssignment> assignments = List.of(
             assignment(s1, deskTask, 9, 0),
@@ -246,9 +240,8 @@ class PolicyServiceTest {
             assignment(s2, otherTask, 10, 0)
         );
 
-        boolean result = policyService.meetPolicy_3(assignments, List.of(3L));
-
-        assertFalse(result);
+        assertThrows(ResponseStatusException.class,
+            () -> policyService.checkPolicy_3(assignments, List.of(3L)));
     }
 
     @Test
@@ -263,9 +256,8 @@ class PolicyServiceTest {
             assignment(s1, checkIn, 10, 0)
         );
 
-        boolean result = policyService.meetPolicy_4(assignments, List.of(4L));
-
-        assertFalse(result);
+        assertThrows(ResponseStatusException.class,
+            () -> policyService.checkPolicy_4(assignments, List.of(4L)));
     }
 
     @Test
@@ -280,9 +272,7 @@ class PolicyServiceTest {
             assignment(s1, roaming, 11, 0)
         );
 
-        boolean result = policyService.meetPolicy_4(assignments, List.of(4L));
-
-        assertTrue(result);
+        assertDoesNotThrow(() -> policyService.checkPolicy_4(assignments, List.of(4L)));
     }
 
     @Test
@@ -298,9 +288,8 @@ class PolicyServiceTest {
             assignment(s1, lunchCheckIn, 13, 0)
         );
 
-        boolean result = policyService.meetPolicy_4(assignments, List.of(4L));
-
-        assertFalse(result);
+        assertThrows(ResponseStatusException.class,
+            () -> policyService.checkPolicy_4(assignments, List.of(4L)));
     }
 
     @Test
@@ -326,9 +315,7 @@ class PolicyServiceTest {
             assignment(s3, desk, 10, 0)
         );
 
-        boolean result = policyService.meetPolicy_5(assignments, List.of(5L));
-
-        assertTrue(result);
+        assertDoesNotThrow(() -> policyService.checkPolicy_5(assignments, List.of(5L)));
     }
 
     @Test
@@ -345,9 +332,8 @@ class PolicyServiceTest {
             assignment(staff(3), desk, 9, 0)
         );
 
-        boolean result = policyService.meetPolicy_5(assignments, List.of(5L));
-
-        assertFalse(result);
+        assertThrows(ResponseStatusException.class,
+            () -> policyService.checkPolicy_5(assignments, List.of(5L)));
     }
 
     @Test
@@ -364,9 +350,8 @@ class PolicyServiceTest {
             assignment(staff(3), checkin, 11, 0)
         );
 
-        boolean result = policyService.meetPolicy_5(assignments, List.of(5L));
-
-        assertFalse(result);
+        assertThrows(ResponseStatusException.class,
+            () -> policyService.checkPolicy_5(assignments, List.of(5L)));
     }
 
     @Test
@@ -387,9 +372,7 @@ class PolicyServiceTest {
             assignment(s2, block, 10, 0)
         );
 
-        boolean result = policyService.meetPolicy_6(assignments, List.of(6L));
-
-        assertTrue(result);
+        assertDoesNotThrow(() -> policyService.checkPolicy_6(assignments, List.of(6L)));
     }
 
     @Test
@@ -407,9 +390,8 @@ class PolicyServiceTest {
             assignment(s1, desk, 10, 0)
         );
 
-        boolean result = policyService.meetPolicy_6(assignments, List.of(6L));
-
-        assertFalse(result);
+        assertThrows(ResponseStatusException.class,
+            () -> policyService.checkPolicy_6(assignments, List.of(6L)));
     }
 
     @Test
@@ -427,9 +409,7 @@ class PolicyServiceTest {
             assignment(s1, block, 10, 0)
         );
 
-        boolean result = policyService.meetPolicy_6(assignments, List.of(6L));
-
-        assertTrue(result);
+        assertDoesNotThrow(() -> policyService.checkPolicy_6(assignments, List.of(6L)));
     }
 
     private static Staff staff(int id) {

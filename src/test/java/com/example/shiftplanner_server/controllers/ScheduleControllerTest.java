@@ -61,7 +61,7 @@ class ScheduleControllerTest {
     void autoScheduleAndSaveReturnsCreatedAndSchedule() throws Exception {
         LocalDate date = LocalDate.of(2026, 7, 20);
         ScheduleParam response = sampleSchedule(date);
-        when(scheduleService.autoScheduleAndSave(eq(date), any(ScheduleParam.class))).thenReturn(response);
+        when(scheduleService.autoSchedule(eq(date), any(ScheduleParam.class))).thenReturn(response);
 
         ScheduleParam request = sampleSchedule(date);
 
@@ -71,7 +71,7 @@ class ScheduleControllerTest {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.date").value("2026-07-20"));
 
-        verify(scheduleService).autoScheduleAndSave(eq(date), any(ScheduleParam.class));
+        verify(scheduleService).autoSchedule(eq(date), any(ScheduleParam.class));
     }
 
     @Test

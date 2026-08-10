@@ -186,12 +186,12 @@ paths:
           description: Schedule not found for the specified date
     post:
       tags: [Schedules]
-      summary: Auto-schedule and save
+      summary: Auto-schedule
       description: |
         Auto-scheduling workflow:
         1) Validate schedule against policies.
         2) Try replacements for optional assignments.
-        3) Save and return 201 if a solution is found.
+        3) Return 201 if a solution is found.
         4) Return 400 with reason if no solution is found.
       parameters:
         - $ref: '#/components/parameters/date'
@@ -203,7 +203,7 @@ paths:
               $ref: '#/components/schemas/ScheduleParam'
       responses:
         '201':
-          description: Saved successfully
+          description: Auto-scheduled successfully
           content:
             application/json:
               schema:

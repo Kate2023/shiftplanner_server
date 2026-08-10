@@ -10,9 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 import static com.example.shiftplanner_server.services.ServiceConstant.*;
 
@@ -37,20 +35,19 @@ public class AutoService {
     // Stage 3: do Policy 5 (2 check-in per hour)
     // Stage 4: change all Optional time slots to actual tasks (if possible)
     public List<ScheduleAssignment> autoAssignTasks(List<ScheduleAssignment> assignments, List<Long> policyIds) {
-        AutoData autoData = new AutoData(assignments, policyIds, taskService.getDeskTask(), taskService.getCheckinTask());
-        tryFirstStages_0_to_3(autoData);
-        tryStage_4(autoData);
+        AutoData data = new AutoData(assignments, policyIds, taskService.getDeskTask(), taskService.getCheckinTask());
+        tryFirstStages_0_to_3(data);
+        tryStage_4(data);
         return assignments;
     }
 
     // 3.3 Implementation: Stage 0 to 3
     void tryFirstStages_0_to_3(AutoData data) {
         // 3.3.1 Flag to indicate whether we are trying to find the best possible solution
-        boolean tryBest = true;
 
         // 3.3.2 high level Implementation of the Stages 0 to 3
         while (data.stage < data.stages.size()) {
-            if (tryStage(data, tryBest)) {
+            if (tryStage(data)) {
                 // Pass current stage successfully, we can move on to the next stage
                 data.stage++;
             } else {
@@ -58,34 +55,42 @@ public class AutoService {
                 data.getCurrentStage().reset();
                 data.stage--; // move back to the previousStage
                 if (data.stage < 0) {
-                    // No more stages to revert. Which means there is no possible solution
-                    if (tryBest) {
-                        // Cannot find the best possible solution. Try to find a feasible solution
-                        tryBest = false;
-                        data.stage = 0; // reset to the first stage
-                    } else {
-                        // Cannot find a feasible solution, throw an exception
-                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ERROR_FORMAT_3);
-                    }
+                    // Cannot find a feasible solution, throw an exception
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ERROR_FORMAT_3);
                 }
             }
         }
     }
 
     // 3.3.3 Implementation of tryStage()
-    boolean tryStage(AutoData data, boolean tryBest) {
+    boolean tryStage(AutoData data) {
         Stage stage = data.getCurrentStage();
         while (stage.time.isBefore(WORK_END)) {
+            // check if current timeslot has enough the target task(s) already
+            long count = data.assignments.stream()
+                .filter(a -> a.getTimeSlot().equals(stage.time)
+                    && (stage.task.equals(a.getTask()) ||
+                    (stage.task.getTaskAlias() != null && stage.task.getTaskAlias().equals(a.getTask()))))
+                .count();
+            if (count >= stage.numberOfTasks) {
+                // Current timeSlot has enough target task(s), move on to the next timeSlot
+                stage.time = stage.time.plusHours(1);
+                stage.staff = null; // reset the staff member for the next timeSlot
+                continue;
+            }
+
             // Find the next suitable staff member for the current timeSlot and task
             Change change = nextChange(data, stage);
             if (change != null) {
                 // save and apply the change to the assignments
                 data.applyChange(change);
                 stage.changes.add(change);
+                stage.time = stage.time.plusHours(1);
+                stage.staff = null;
                 continue;
             }
             // If we reach here, it means we couldn't find a suitable staff member for the current timeSlot and task.
-            if (stage.isMandatory || tryBest) {
+            if (stage.isMandatory) {
                 // Mandatory. We must revert or return false if we cannot revert.
                 if (stage.changes.isEmpty()) {
                     // Cannot revert
@@ -93,7 +98,7 @@ public class AutoService {
                 } else {
                     // Revert the last change
                     Change lastChange = stage.changes.pollLast();
-                    data.applyChange(lastChange);
+                    data.revertChange(lastChange);
                     stage.time = lastChange.timeSlot(); // Go back to the last assigned timeSlot to reassign
                     stage.staff = lastChange.staff(); // Go back to the last assigned staff member to reassign
                     continue;
@@ -107,10 +112,11 @@ public class AutoService {
 
     // 3.3.4 Implementation of nextChange()
     private Change nextChange(AutoData data, Stage stage) {
-
+        Task optional = taskService.getOptionalTask();
         List<Score> scores = new ArrayList<>();
         for (Staff staff : data.getStaffs()) {
-            if (passPolicyCheck(data, stage, staff)) {
+            if (optional.equals(data.getTask(staff, stage.time))
+                && passPolicyCheck(data, stage.time, staff, stage.task)) {
                 // Calculate the score for the staff member based on the number of tasks assigned
                 scores.add(new Score(staff, calculateScore(data, staff, stage.task)));
             }
@@ -119,11 +125,13 @@ public class AutoService {
         scores.sort(Comparator.comparingLong(Score::value).thenComparing(s -> s.staff().getStaffName()));
 
         for (int i = 0; i < scores.size(); i++) {
-            // Find the current staff member in the sorted list
-            if (scores.get(i).staff().equals(stage.staff)) {
-                // Check if there is an element after it
+            if (stage.staff == null) {
+                // The first time we try this timeSlot
+                return new Change(scores.getFirst().staff(), stage.time, stage.task, optional);
+            } else if (scores.get(i).staff().equals(stage.staff)) {
+                // We have already tried this staff member, so we need to find the next one in the sorted list
                 if (i + 1 < scores.size()) {
-                    return new Change(scores.get(i + 1).staff(), stage.time, stage.task); // Return the next staff member in the sorted list
+                    return new Change(scores.get(i + 1).staff(), stage.time, stage.task, optional);
                 }
                 return null; // No next staff member available
             }
@@ -150,14 +158,14 @@ public class AutoService {
     void tryStage_4(AutoData data) {
         Task optional = taskService.getOptionalTask();
         // Iterate through all the timeSlots and staff members to find Optional time slots
-        for (Staff staff : data.getStaffs()) {
-            for (LocalTime t = WORK_START; t.isBefore(WORK_END); t = t.plusHours(1)) {
-                if (data.getTask(staff, t) == optional) {
+        for (LocalTime t = WORK_START; t.isBefore(WORK_END); t = t.plusHours(1)) {
+            for (Staff staff : data.getStaffs()) {
+                if (data.getTask(staff, t).equals(optional)) {
                     // Try to assign a task to the Optional time slot
                     Task newTask = findSuitableTask(data, staff, t);
                     if (newTask != null) {
                         // Assign the new task to the Optional time slot
-                        Change change = new Change(staff, t, newTask);
+                        Change change = new Change(staff, t, newTask, taskService.getOptionalTask());
                         data.applyChange(change);
                     }
                 }
@@ -167,14 +175,29 @@ public class AutoService {
 
     // 3.4.2 Implementation of findSuitableTask()
     private Task findSuitableTask(AutoData data, Staff staff, LocalTime time) {
+        Task optional = taskService.getOptionalTask();
         // Check the previous and next timeSlots to ensure no consecutive tasks are assigned
         Task previousTask = data.getTask(staff, time.minusHours(1));
         Task nextTask = data.getTask(staff, time.plusHours(1));
-        List<Task> possibleTasks = List.of(taskService.getPickingTask(),
+        List<Task> possibleTasks = new ArrayList<>(List.of(taskService.getPickingTask(),
             taskService.getRoamingTask(),
-            taskService.getShelvingTask());
+            taskService.getShelvingTask()));
+        Map<Task, Long> taskCounts = new HashMap<>();
         for (Task task : possibleTasks) {
-            if (task != previousTask && task != nextTask) {
+            if (optional.equals(data.getTask(staff, time))
+                && passPolicyCheck(data, time, staff, task)) {
+                taskCounts.put(task, data.countByTask(task));
+            }
+        }
+        if (taskCounts.isEmpty()) {
+            return null;
+        }
+
+        //sort score from small to big
+        possibleTasks.sort(Comparator.comparingLong(taskCounts::get));
+
+        for (Task task : possibleTasks) {
+            if (!task.equals(previousTask) && !task.equals(nextTask)) {
                 return task;
             }
         }
@@ -182,13 +205,13 @@ public class AutoService {
     }
 
     // 3.5 Implementation of Policy Check (4 & 6 only)
-    private boolean passPolicyCheck(AutoData data, Stage stage, Staff staff) {
-        return passPolicy4(data, stage, staff)
-            && passPolicy6(data, staff);
+    private boolean passPolicyCheck(AutoData data, LocalTime time, Staff staff, Task task) {
+        return tryPolicy4(data, time, staff, task)
+            && tryPolicy6(data, staff);
     }
 
-    // 3.5.1 Implementation of passPolicy4()
-    private boolean passPolicy4(AutoData data, Stage stage, Staff staff) {
+    // 3.5.1 Implementation of tryPolicy4()
+    private boolean tryPolicy4(AutoData data, LocalTime time, Staff staff, Task task) {
         if (!data.policyIds.contains(4L)) {
             return true; // Policy 4 is not enabled, so we can skip the check
         }
@@ -200,8 +223,6 @@ public class AutoService {
         // no lunch/check-in after a check-in task,
         // and no lunch/roaming after a roaming task.
         // And vice versa.
-        LocalTime time = stage.time;
-        Task task = stage.task;
         if (time.isAfter(WORK_START)) {
             Task previousTask = data.getTask(staff, time.minusHours(1));
             if (previousTask != null) {
@@ -213,15 +234,15 @@ public class AutoService {
 
         if (time.isBefore(WORK_END)) {
             Task nextTask = data.getTask(staff, time.plusHours(1));
-            if (nextTask != null) {
-                return !nextTask.equals(task) && !nextTask.getTaskAlias().equals(task); // Consecutive tasks violation
-            }
+            return (nextTask != null)
+                && (!nextTask.equals(task))
+                && (task.getTaskAlias() == null || !task.getTaskAlias().equals(nextTask)); // Consecutive tasks violation
         }
         return true; // No consecutive tasks violation
     }
 
-    // 3.5.2 Implementation of passPolicy6()
-    private boolean passPolicy6(AutoData data, Staff staff) {
+    // 3.5.2 Implementation of tryPolicy6()
+    private boolean tryPolicy6(AutoData data, Staff staff) {
         if (!data.policyIds.contains(6L)) {
             return true;// Policy 6 is not enabled, so we can skip the check
         }

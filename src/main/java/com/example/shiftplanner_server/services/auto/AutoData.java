@@ -53,6 +53,14 @@ public class AutoData {
             .collect(Collectors.toList());
     }
 
+    public List<LocalTime> getAllTimeSlots(List<ScheduleAssignment> assignments) {
+        return assignments.stream()
+            .map(ScheduleAssignment::getTimeSlot)
+            .distinct()
+            .sorted()
+            .collect(Collectors.toList());
+    }
+
     public Stage getCurrentStage() {
         return stages.get(stage);
     }
@@ -61,6 +69,13 @@ public class AutoData {
         ScheduleAssignment assignment = findAssignment(change.staff(), change.timeSlot());
         if (assignment != null) {
             assignment.setTask(change.task());
+        }
+    }
+
+    public void revertChange(Change change) {
+        ScheduleAssignment assignment = findAssignment(change.staff(), change.timeSlot());
+        if (assignment != null) {
+            assignment.setTask(change.original());
         }
     }
 
@@ -74,5 +89,28 @@ public class AutoData {
     public Task getTask(Staff staff, LocalTime timeSlot) {
         ScheduleAssignment assignment = findAssignment(staff, timeSlot);
         return assignment != null ? assignment.getTask() : null;
+    }
+
+    public Long countByTask(Task task) {
+        return assignments.stream().filter(a -> a.getTask().equals(task)).count();
+    }
+
+    public String getTaskString() {
+        StringBuilder s = new StringBuilder();
+        s.append(String.format("'%-10s':", "Time/Staff"));
+        for (Staff staff : getAllStaff(assignments)) {
+            s.append(String.format("'%-13s',", staff.getStaffName()));
+        }
+        s.append("\n");
+
+        for (LocalTime time : getAllTimeSlots(assignments)) {
+            s.append(String.format("'%-10s':", time));
+            for (Staff staff : getAllStaff(assignments)) {
+                Task task = getTask(staff, time);
+                s.append(String.format("'%-13s',", task != null ? task.getTaskName() : "None"));
+            }
+            s.append("\n");
+        }
+        return s.toString();
     }
 }

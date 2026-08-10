@@ -19,10 +19,13 @@ class StageTest {
         Task task = new Task();
         task.setTaskId(1);
 
+        Task original = new Task();
+        original.setTaskId(2);
+
         Staff staff = new Staff();
         staff.setStaffId(100);
 
-        Change change = new Change(staff, LocalTime.of(11, 0), task);
+        Change change = new Change(staff, LocalTime.of(11, 0), task, original);
         ArrayDeque<Change> changes = new ArrayDeque<>();
         changes.add(change);
 
