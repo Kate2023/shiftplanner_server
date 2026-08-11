@@ -9,6 +9,7 @@ import lombok.Setter;
 import java.time.LocalTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,7 +28,7 @@ public class AutoData {
     AutoData(List<ScheduleAssignment> assignments, List<Long> policyIds, Task deskTask, Task checkInTask) {
         this.assignments = assignments;
         this.policyIds = policyIds;
-        this.staffs = getAllStaff(assignments);
+        this.staffs = getAllStaff();
 
         this.stages = new ArrayList<>();
         if (policyIds.contains(3L)) {
@@ -46,19 +47,25 @@ public class AutoData {
         this.stage = 0;
     }
 
-    public List<Staff> getAllStaff(List<ScheduleAssignment> assignments) {
+    public List<Staff> getAllStaff() {
         return assignments.stream()
             .map(ScheduleAssignment::getStaff)
             .distinct()
-            .collect(Collectors.toList());
+            .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    public List<LocalTime> getAllTimeSlots(List<ScheduleAssignment> assignments) {
+    public List<Staff> getShuffledStaffs() {
+        List<Staff> shuffled = new ArrayList<>(staffs);
+        Collections.shuffle(shuffled);
+        return shuffled;
+    }
+
+    public List<LocalTime> getAllTimeSlots() {
         return assignments.stream()
             .map(ScheduleAssignment::getTimeSlot)
             .distinct()
             .sorted()
-            .collect(Collectors.toList());
+            .toList();
     }
 
     public Stage getCurrentStage() {
@@ -98,14 +105,14 @@ public class AutoData {
     public String getTaskString() {
         StringBuilder s = new StringBuilder();
         s.append(String.format("'%-10s':", "Time/Staff"));
-        for (Staff staff : getAllStaff(assignments)) {
+        for (Staff staff : getAllStaff()) {
             s.append(String.format("'%-13s',", staff.getStaffName()));
         }
         s.append("\n");
 
-        for (LocalTime time : getAllTimeSlots(assignments)) {
+        for (LocalTime time : getAllTimeSlots()) {
             s.append(String.format("'%-10s':", time));
-            for (Staff staff : getAllStaff(assignments)) {
+            for (Staff staff : getAllStaff()) {
                 Task task = getTask(staff, time);
                 s.append(String.format("'%-13s',", task != null ? task.getTaskName() : "None"));
             }

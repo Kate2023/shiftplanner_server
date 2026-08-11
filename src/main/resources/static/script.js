@@ -43,7 +43,7 @@ const taskNames = [
 
 const timeSlots = [
     "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
-    "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM", "6:00 PM"
+    "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"
 ];
 
 const defaultStaff = [
@@ -1327,8 +1327,8 @@ function createTaskDropdown(rowIndex, colIndex, selectedTask) {
     select.dataset.row = rowIndex;
     select.dataset.col = colIndex;
 
-    const isSixPmSlot = timeSlots[rowIndex] === "6:00 PM";
-    const allowedTasks = isSixPmSlot
+    const isFivePmSlot = timeSlots[rowIndex] === "5:00 PM";
+    const allowedTasks = isFivePmSlot
         ? ["Closing-15mins", "Block"]
         : taskNames;
 
@@ -1346,7 +1346,7 @@ function createTaskDropdown(rowIndex, colIndex, selectedTask) {
         select.appendChild(option);
     });
 
-    // If existing stored value was invalid for 6 PM, normalize it immediately
+    // If existing stored value was invalid for 5 PM, normalize it immediately
     if (safeSelectedTask !== selectedTask) {
         const schedule = normalizeScheduleToStaffCount();
         schedule[rowIndex][colIndex] = safeSelectedTask;

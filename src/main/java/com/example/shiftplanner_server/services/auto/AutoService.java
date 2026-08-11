@@ -114,7 +114,7 @@ public class AutoService {
     private Change nextChange(AutoData data, Stage stage) {
         Task optional = taskService.getOptionalTask();
         List<Score> scores = new ArrayList<>();
-        for (Staff staff : data.getStaffs()) {
+        for (Staff staff : data.getShuffledStaffs()) {
             if (optional.equals(data.getTask(staff, stage.time))
                 && passPolicyCheck(data, stage.time, staff, stage.task)) {
                 // Calculate the score for the staff member based on the number of tasks assigned
@@ -122,7 +122,7 @@ public class AutoService {
             }
         }
 
-        scores.sort(Comparator.comparingLong(Score::value).thenComparing(s -> s.staff().getStaffName()));
+        scores.sort(Comparator.comparingLong(Score::value)); // Sort scores in ascending order
 
         for (int i = 0; i < scores.size(); i++) {
             if (stage.staff == null) {
@@ -158,8 +158,8 @@ public class AutoService {
     void tryStage_4(AutoData data) {
         Task optional = taskService.getOptionalTask();
         // Iterate through all the timeSlots and staff members to find Optional time slots
-        for (LocalTime t = WORK_START; t.isBefore(WORK_END); t = t.plusHours(1)) {
-            for (Staff staff : data.getStaffs()) {
+        for (LocalTime t : data.getAllTimeSlots()) {
+            for (Staff staff : data.getShuffledStaffs()) {
                 if (data.getTask(staff, t).equals(optional)) {
                     // Try to assign a task to the Optional time slot
                     Task newTask = findSuitableTask(data, staff, t);
@@ -194,9 +194,12 @@ public class AutoService {
         }
 
         //sort score from small to big
-        possibleTasks.sort(Comparator.comparingLong(taskCounts::get));
+        List<Task> sortedTasks = taskCounts.entrySet().stream()
+            .sorted(Map.Entry.comparingByValue())
+            .map(Map.Entry::getKey)
+            .toList();
 
-        for (Task task : possibleTasks) {
+        for (Task task : sortedTasks) {
             if (!task.equals(previousTask) && !task.equals(nextTask)) {
                 return task;
             }
@@ -255,7 +258,9 @@ public class AutoService {
     private boolean isPartTime(AutoData data, Staff staff) {
         Task block = taskService.getBlockTask();
         return data.assignments.stream()
-            .anyMatch(a -> a.getTask().equals(block) && a.getStaff().equals(staff));
+            .anyMatch(a -> a.getTask().equals(block)
+                && a.getStaff().equals(staff)
+                && a.getTimeSlot().isBefore(WORK_END)); // Check if the staff member has a Block task before the last hour of work
     }
 
     //3.5.4 Implementation of hasTwoOptionalTimeSlot()
