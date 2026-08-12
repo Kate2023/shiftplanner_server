@@ -37,7 +37,7 @@ public class TaskService {
     public List<Task> getLunchTasks() {
         if (LUNCH_TASKS.isEmpty()) {
             getAll().stream()
-                .filter(task -> task.getTaskName().toLowerCase().contains("lunch"))
+                .filter(Task::isLunch)
                 .forEach(LUNCH_TASKS::add);
         }
         return LUNCH_TASKS;

@@ -47,10 +47,10 @@ class TaskServiceTest {
     }
 
     @Test
-    void getLLunchTasksReturnsOnlyLunchTasksAndCachesResult() {
-        Task lunch = task(1, "Lunch break");
-        Task lunchCheckin = task(2, "Lunch/Check-in");
-        Task desk = task(3, "Desk");
+    void getLunchTasksReturnsOnlyLunchTasksAndCachesResult() {
+        Task lunch = task(1, "Lunch break", true);
+        Task lunchCheckin = task(2, "Lunch/Check-in", true);
+        Task desk = task(3, "Desk", false);
         when(taskRepository.findAll()).thenReturn(List.of(lunch, lunchCheckin, desk));
 
         List<Task> firstCall = taskService.getLunchTasks();
@@ -119,9 +119,14 @@ class TaskServiceTest {
     }
 
     private static Task task(int id, String name) {
+       return task(id, name, false);
+    }
+
+    private static Task task(int id, String name, boolean isLunch) {
         Task task = new Task();
         task.setTaskId(id);
         task.setTaskName(name);
+        task.setLunch(isLunch);
         return task;
     }
 }

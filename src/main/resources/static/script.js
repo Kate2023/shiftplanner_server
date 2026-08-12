@@ -476,6 +476,8 @@ async function saveShiftDate() {
         const apiSchedule = await fetchScheduleByDate(selectedDate);
         if (apiSchedule) {
             mapApiScheduleToLocalState(apiSchedule);
+        } else {
+            resetToStarterSchedule();
         }
     } catch (error) {
         console.error("Unable to load schedule from API.", error);
@@ -485,6 +487,8 @@ async function saveShiftDate() {
     buildVisibleCalendars();
     loadNotes("shiftNotes", "shiftPlannerNotes");
     populateDutyDropdowns();
+
+    shiftDateInput.value="";
 }
 
 async function loadReviewScheduleByPickedDate(showAlertOnError = true) {

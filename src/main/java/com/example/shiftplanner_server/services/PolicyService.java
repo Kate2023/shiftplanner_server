@@ -73,7 +73,7 @@ public class PolicyService {
     /**
      * Check with Policy 2:
      * Between 12:00 p.m. and 2:00 p.m., every staff member must be allocated one of the four tasks:
-     * lunch break, lunch/ check-in, lunch/bell or lunch/roaming.
+     * lunch break, lunch/ check-in, lunch/bell, lunch/roaming or block.
      *
      * @param assignments assignments to be checked.
      * @param policyIds   list of policy IDs to be checked.
