@@ -465,7 +465,7 @@ function isManagerRole() {
     return (localStorage.getItem("shiftPlannerCurrentRole") || "").trim().toLowerCase() === "manager";
 }
 
-async function saveShiftDate() {
+async function loadShiftDate() {
     const shiftDateInput = document.getElementById("shiftDate");
     if (!shiftDateInput) return;
 
