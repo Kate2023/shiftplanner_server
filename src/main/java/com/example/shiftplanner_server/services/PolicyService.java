@@ -62,12 +62,31 @@ public class PolicyService {
         if (policyIds == null || policyIds.isEmpty() || !policyIds.contains(1L)) {
             return; // Policy 1 is not applicable
         }
-        List<Integer> staffIds = scheduleAssignmentService.getDistinctStaffs(assignments);
+//        List<Integer> staffIds = scheduleAssignmentService.getDistinctStaffs(assignments);
         int requiredStaff = policyRepository.findById(1).orElseThrow().getParam1();
-        if (!(staffIds.size() >= requiredStaff)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "1",
-                "Need at least " + requiredStaff + " staff members"));
-        }
+        Task lunchTask = taskService.getLunchTask();
+        Task blockTask = taskService.getBlockTask();
+//        if (!(staffIds.size() >= requiredStaff)) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "1",
+//                "Need at least " + requiredStaff + " staff members"));
+//        }
+
+        assignments.stream()
+            .collect(Collectors.groupingBy(ScheduleAssignment::getTimeSlot))
+            .forEach((timeSlot, ssa) -> {
+                if (!timeSlot.isBefore(LUNCH_START) && timeSlot.isBefore(LUNCH_END)) {
+                    long count = ssa.stream()
+                        .filter(sa -> !lunchTask.equals(sa.getTask())
+                            && !blockTask.equals(sa.getTask()))
+                        .count();
+                    boolean hasEnoughStaffs = count >= requiredStaff;
+
+                    if (!hasEnoughStaffs) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            String.format(ERROR_FORMAT_1, "1", "Need at least " + requiredStaff + " staff members at " + timeSlot));
+                    }
+                }
+            });
     }
 
     /**

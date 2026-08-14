@@ -29,6 +29,7 @@ public class TaskService {
     private Task PICKING_TASK;
     private Task ROAMING_TASK;
     private Task SHELVING_TASK;
+    private Task LUNCH_TASK;
 
     public List<Task> getAll() {
         return taskRepository.findAll();
@@ -120,5 +121,15 @@ public class TaskService {
                 .orElseThrow(() -> new RuntimeException("Shelving task not found"));
         }
         return SHELVING_TASK;
+    }
+
+    public Task getLunchTask() {
+        if (LUNCH_TASK == null) {
+            LUNCH_TASK = getAll().stream()
+                .filter(task -> task.getTaskName().toLowerCase().contains("lunch"))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Lunch task not found"));
+        }
+        return LUNCH_TASK;
     }
 }
