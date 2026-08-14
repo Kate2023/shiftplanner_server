@@ -155,10 +155,6 @@ function initializeStorage() {
         localStorage.setItem("shiftPlannerNotes", "");
     }
 
-    if (!localStorage.getItem("shiftPlannerReviewNotes")) {
-        localStorage.setItem("shiftPlannerReviewNotes", "");
-    }
-
     if (!localStorage.getItem("shiftPlannerShiftDate")) {
         localStorage.setItem("shiftPlannerShiftDate", defaultShiftDate);
     }
@@ -517,7 +513,7 @@ async function loadReviewScheduleByPickedDate(showAlertOnError = true) {
 
     updateScheduleTitles();
     buildVisibleCalendars();
-    loadNotes("reviewNotes", "shiftPlannerReviewNotes");
+    loadNotes("reviewNotes", "shiftPlannerNotes");
     loadDailyAssignmentsForReview();
 }
 
@@ -881,7 +877,7 @@ function setAutoRuleConfirmLoadingState(isLoading) {
 
 function buildAutoRuleLabelText(policy) {
     const fallbackLabel = `Rule ${policy.policyId}`;
-    const description = (policy.description || "").trim();
+    const description = (policy.description.replace("{3}", policy.param1) || "").trim();
     return description ? `${fallbackLabel}: ${description}` : fallbackLabel;
 }
 
@@ -895,8 +891,8 @@ function renderAutoScheduleRuleList(rules) {
         const row = document.createElement("label");
         row.className = "auto-rule-item";
 
-        const text = document.createElement("span");
-        text.textContent = buildAutoRuleLabelText(policy);
+        const checkFrame = document.createElement("span");
+        checkFrame.className = "auto-rule-item-checkframe";
 
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
@@ -904,9 +900,14 @@ function renderAutoScheduleRuleList(rules) {
         checkbox.className = AUTO_RULE_ITEM_CLASS;
         checkbox.value = String(policy.policyId);
         checkbox.addEventListener("change", updateAutoRuleSelectAllState);
+        checkFrame.appendChild(checkbox);
 
-        row.appendChild(text);
-        row.appendChild(checkbox);
+        const textFrame = document.createElement("span");
+        textFrame.className = "auto-rule-item-content";
+        textFrame.textContent = buildAutoRuleLabelText(policy);
+
+        row.appendChild(checkFrame);
+        row.appendChild(textFrame);
         list.appendChild(row);
     });
 
@@ -1019,7 +1020,7 @@ function closeAutoScheduleRulePopup() {
 
 async function loadPolicies() {
     const input = document.getElementById("minimumStaffInput");
-    const localValue = localStorage.getItem("shiftPlannerMinimumStaff") || "3";
+    const localValue = localStorage.getItem("shiftPlannerMinimumStaff");
 
     if (input) {
         input.value = localValue;
@@ -1206,12 +1207,18 @@ function renderHeaderRow(headerRowId) {
     if (isShiftHeader) {
         const firstCell = document.createElement("th");
         firstCell.className = "time-cell";
-        firstCell.innerHTML = `<button type="button" class="btn btn-primary" onclick="addStaffColumn()">Add staff</button>`;
+        const frame = document.createElement("div");
+        frame.className = "time-cell-frame";
+        frame.innerHTML = `<button type="button" class="btn btn-primary" onclick="addStaffColumn()">Add staff</button>`;
+        firstCell.appendChild(frame);
         headerRow.appendChild(firstCell);
     } else {
         const firstCell = document.createElement("th");
         firstCell.className = "time-cell";
-        firstCell.textContent = "Time";
+        const frame = document.createElement("div");
+        frame.className = "time-cell-frame";
+        frame.textContent = "Time";
+        firstCell.appendChild(frame);
         headerRow.appendChild(firstCell);
     }
 
@@ -1378,7 +1385,10 @@ function buildCalendar(tbodyId, useDropdown = false) {
 
         const timeTd = document.createElement("td");
         timeTd.className = "time-cell";
-        timeTd.textContent = time;
+        const timeFrame = document.createElement("div");
+        timeFrame.className = "time-cell-frame";
+        timeFrame.textContent = time;
+        timeTd.appendChild(timeFrame);
         tr.appendChild(timeTd);
 
         for (let col = 0; col < schedule[rowIndex].length; col++) {
@@ -1650,6 +1660,8 @@ function setupReviewPageButtons() {
 function saveNotes(elementId, storageKey) {
     const value = document.getElementById(elementId)?.value || "";
     localStorage.setItem(storageKey, value);
+    localStorage.setItem("shiftPlannerNotes", value);
+
 }
 
 function loadNotes(elementId, storageKey) {
@@ -1764,7 +1776,7 @@ async function initReviewPage() {
     } else {
         // Senior librarian/librarian path is local-only.
         buildVisibleCalendars();
-        loadNotes("reviewNotes", "shiftPlannerReviewNotes");
+        loadNotes("reviewNotes", "shiftPlannerNotes");
         loadDailyAssignmentsForReview();
     }
 

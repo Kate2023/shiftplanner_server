@@ -2,18 +2,18 @@
 
 -- policies
 insert into sp.policies(description, param_1)
-values ('1. Excluding staff who are on their lunch break, there must be at least {1} staff members present in the library at all times.',
+values ('Excluding staff who are on their lunch break, there must be at least {1} staff members present in the library at all times.',
         3),
-       ('2. Between 12:00 p.m. and 2:00 p.m., every staff member must be allocated one of the four tasks: lunch break, lunch/ check-in, lunch/bell or lunch/roaming.',
+       ('Between 12:00 p.m. and 2:00 p.m., every staff member must be allocated one of the four tasks: lunch break, lunch/ check-in, lunch/bell or lunch/roaming.',
         null),
-       ('3. At least one staff member must be assigned to the service desk during every hourly time slot.', null),
-       ('4. A staff member must not be assigned to two consecutive Desk, Check-in, Picking, Roaming or Shelving tasks.',
+       ('At least one staff member must be assigned to the service desk during every hourly time slot.', null),
+       ('A staff member must not be assigned to two consecutive Desk, Check-in, Picking, Roaming or Shelving tasks.',
         null),
-       ('5. At most two staff members should be assigned to the service desk during each hourly time slot whenever possible.',
+       ('At most two staff members should be assigned to the service desk during each hourly time slot whenever possible.',
         null),
-       ('6. Staff members working an eight-hour shift must be allocated at least one Optional (unassigned) time slot during the day.',
+       ('Staff members working an eight-hour shift must be allocated at least one Optional (unassigned) time slot during the day.',
         null),
-       ('7. Where staffing levels permit, a staff member should be assigned to the Check-in task during every hourly time slot.',
+       ('Where staffing levels permit, a staff member should be assigned to the Check-in task during every hourly time slot.',
         null);
 
 -- users

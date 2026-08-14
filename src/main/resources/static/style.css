@@ -373,6 +373,33 @@ th {
   min-width: 90px;
 }
 
+.calendar-table .time-cell {
+  position: sticky;
+  left: 0;
+  width: 112px;
+  min-width: 112px;
+  padding: 6px 8px;
+  z-index: 3;
+  background: #f8fbfe;
+  box-shadow: 2px 0 0 0 var(--border);
+}
+
+.calendar-table thead .time-cell {
+  z-index: 5;
+}
+
+.time-cell-frame {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 36px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+}
+
 .task-cell {
   min-width: 140px;
   height: 72px;
@@ -645,24 +672,48 @@ th {
 
 .auto-rule-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: stretch;
+  justify-content: flex-start;
   gap: 14px;
   margin: 0;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: #fbfdff;
+  cursor: pointer;
 }
 
-.auto-rule-item span {
+.auto-rule-item-checkframe {
+  width: 42px;
+  min-width: 42px;
+  border: 0px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+}
+
+.auto-rule-item-checkframe input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.auto-rule-item-content {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
   color: var(--text);
 }
 
 #shiftHeaderRow .time-cell .btn {
-  width: 120px;
-  min-width: 120px;
-  max-width: 120px;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  padding: 8px 10px;
 }
 
 #shiftHeaderRow th,
