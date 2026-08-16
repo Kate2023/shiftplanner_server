@@ -151,10 +151,6 @@ function initializeStorage() {
         localStorage.setItem("shiftPlannerSchedule", JSON.stringify(createDefaultSchedule()));
     }
 
-    if (!localStorage.getItem("shiftPlannerNotes")) {
-        localStorage.setItem("shiftPlannerNotes", "");
-    }
-
     if (!localStorage.getItem("shiftPlannerShiftDate")) {
         localStorage.setItem("shiftPlannerShiftDate", defaultShiftDate);
     }
@@ -379,7 +375,6 @@ function mapApiScheduleToLocalState(apiSchedule) {
 
     localStorage.setItem("shiftPlannerDynamicStaffIds", JSON.stringify(activeIds));
     localStorage.setItem("shiftPlannerSchedule", JSON.stringify(schedule));
-    localStorage.setItem("shiftPlannerNotes", apiSchedule?.notes || "");
     localStorage.setItem("shiftPlannerDailyAssignments", JSON.stringify({
         roster: toStaffName(apiSchedule?.rosterStaffId),
         banking: toStaffName(apiSchedule?.bankingStaffId),
@@ -403,7 +398,6 @@ async function fetchScheduleByDate(date) {
 function resetToStarterSchedule() {
     localStorage.removeItem("shiftPlannerDynamicStaffIds");
     localStorage.removeItem("shiftPlannerSchedule");
-    localStorage.removeItem("shiftPlannerNotes");
     localStorage.removeItem("shiftPlannerDailyAssignments");
 
     const firstStaffId = Number(getStaff()?.[0]?.id);
@@ -435,7 +429,7 @@ async function loadShiftDatePicker() {
 
     updateScheduleTitles();
     buildVisibleCalendars();
-    loadNotes("shiftNotes", "shiftPlannerNotes");
+    loadNotes("shiftNotes");
     populateDutyDropdowns();
 }
 
@@ -481,7 +475,7 @@ async function loadShiftDate() {
 
     updateScheduleTitles();
     buildVisibleCalendars();
-    loadNotes("shiftNotes", "shiftPlannerNotes");
+    loadNotes("shiftNotes");
     populateDutyDropdowns();
 
     shiftDateInput.value="";
@@ -513,7 +507,7 @@ async function loadReviewScheduleByPickedDate(showAlertOnError = true) {
 
     updateScheduleTitles();
     buildVisibleCalendars();
-    loadNotes("reviewNotes", "shiftPlannerNotes");
+    loadNotes("reviewNotes");
     loadDailyAssignmentsForReview();
 }
 
@@ -1310,7 +1304,7 @@ async function autoScheduleShift(selectedPolicyIds = [MINIMUM_STAFF_POLICY_ID]) 
         mapApiScheduleToLocalState(apiSchedule);
         updateScheduleTitles();
         buildVisibleCalendars();
-        loadNotes("shiftNotes", "shiftPlannerNotes");
+        loadNotes("shiftNotes");
         populateDutyDropdowns();
         closeAutoScheduleRulePopup();
 
@@ -1518,7 +1512,7 @@ function buildScheduleApiPayload(date, policyIds = [MINIMUM_STAFF_POLICY_ID]) {
 
     const fallbackStaffId = Number(activeStaff[0].id);
     const dailyAssignments = JSON.parse(localStorage.getItem("shiftPlannerDailyAssignments")) || {};
-    const notes = document.getElementById("shiftNotes")?.value ?? localStorage.getItem("shiftPlannerNotes") ?? "";
+    const notes = document.getElementById("shiftNotes")?.value || "";
 
     const normalizedPolicyIds = (Array.isArray(policyIds) ? policyIds : [MINIMUM_STAFF_POLICY_ID])
         .map(policyId => Number(policyId))
@@ -1660,7 +1654,6 @@ function setupReviewPageButtons() {
 function saveNotes(elementId, storageKey) {
     const value = document.getElementById(elementId)?.value || "";
     localStorage.setItem(storageKey, value);
-    localStorage.setItem("shiftPlannerNotes", value);
 
 }
 
@@ -1744,7 +1737,7 @@ async function initLibrarianPage() {
     initializeAutoScheduleRuleModalEvents();
     await fetchAndCacheStaff();
     buildVisibleCalendars();
-    loadNotes("shiftNotes", "shiftPlannerNotes");
+    loadNotes("shiftNotes");
     loadDailyAssignmentsForLibrarian();
 
     const shiftDateInput = document.getElementById("shiftDate");
@@ -1776,7 +1769,7 @@ async function initReviewPage() {
     } else {
         // Senior librarian/librarian path is local-only.
         buildVisibleCalendars();
-        loadNotes("reviewNotes", "shiftPlannerNotes");
+        loadNotes("reviewNotes");
         loadDailyAssignmentsForReview();
     }
 
