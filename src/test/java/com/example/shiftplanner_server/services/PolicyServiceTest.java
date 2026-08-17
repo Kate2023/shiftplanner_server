@@ -135,28 +135,52 @@ class PolicyServiceTest {
     }
 
     @Test
-    void meetPolicy1ReturnsTrueWhenDistinctStaffCountMeetsThreshold() {
+    void meetPolicy1ReturnsTrueWhenEnoughNonLunchStaffArePresentAtLunchTime() {
         Policy minStaffPolicy = new Policy();
         minStaffPolicy.setPolicyId(1);
         minStaffPolicy.setParam1(2);
 
-        when(scheduleAssignmentService.getDistinctStaffs(any())).thenReturn(List.of(10, 11));
+        Task lunch = task(1, null);
+        Task offsite = task(2, null);
+        Task desk = task(3, null);
+        Staff staffA = staff(10);
+        Staff staffB = staff(11);
+
+        when(taskService.getLunchTask()).thenReturn(lunch);
+        when(taskService.getOffsiteTask()).thenReturn(offsite);
         when(policyRepository.findById(1)).thenReturn(Optional.of(minStaffPolicy));
 
-        assertDoesNotThrow(() -> policyService.checkPolicy_1(List.of(new ScheduleAssignment()), List.of(1L)));
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(staffA, desk, 12, 0),
+            assignment(staffB, desk, 12, 0)
+        );
+
+        assertDoesNotThrow(() -> policyService.checkPolicy_1(assignments, List.of(1L)));
     }
 
     @Test
-    void meetPolicy1ReturnsFalseWhenDistinctStaffCountIsBelowThreshold() {
+    void meetPolicy1ReturnsFalseWhenNotEnoughNonLunchStaffArePresentAtLunchTime() {
         Policy minStaffPolicy = new Policy();
         minStaffPolicy.setPolicyId(1);
         minStaffPolicy.setParam1(3);
 
-        when(scheduleAssignmentService.getDistinctStaffs(any())).thenReturn(List.of(10, 11));
+        Task lunch = task(1, null);
+        Task offsite = task(2, null);
+        Task desk = task(3, null);
+        Staff staffA = staff(10);
+        Staff staffB = staff(11);
+
+        when(taskService.getLunchTask()).thenReturn(lunch);
+        when(taskService.getOffsiteTask()).thenReturn(offsite);
         when(policyRepository.findById(1)).thenReturn(Optional.of(minStaffPolicy));
 
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(staffA, desk, 12, 0),
+            assignment(staffB, desk, 12, 0)
+        );
+
         assertThrows(ResponseStatusException.class,
-            () -> policyService.checkPolicy_1(List.of(new ScheduleAssignment()), List.of(1L)));
+            () -> policyService.checkPolicy_1(assignments, List.of(1L)));
     }
 
     @Test
@@ -355,34 +379,34 @@ class PolicyServiceTest {
     }
 
     @Test
-    void meetPolicy6ReturnsTrueWhenStaffWithoutBlockHasOptionalSlot() {
-        Task block = task(30, null);
+    void meetPolicy6ReturnsTrueWhenStaffWithoutOffsiteHasOptionalSlot() {
+        Task offsite = task(30, null);
         Task optional = task(31, null);
         Task desk = task(32, null);
         Staff s1 = staff(1);
         Staff s2 = staff(2);
 
-        when(taskService.getBlockTask()).thenReturn(block);
+        when(taskService.getOffsiteTask()).thenReturn(offsite);
         when(taskService.getOptionalTask()).thenReturn(optional);
 
         List<ScheduleAssignment> assignments = List.of(
             assignment(s1, desk, 9, 0),
             assignment(s1, optional, 10, 0),
             assignment(s2, desk, 9, 0),
-            assignment(s2, block, 10, 0)
+            assignment(s2, offsite, 10, 0)
         );
 
         assertDoesNotThrow(() -> policyService.checkPolicy_6(assignments, List.of(6L)));
     }
 
     @Test
-    void meetPolicy6ReturnsFalseWhenStaffWithoutBlockHasNoOptionalSlot() {
-        Task block = task(30, null);
+    void meetPolicy6ReturnsFalseWhenStaffWithoutOffsiteHasNoOptionalSlot() {
+        Task offsite = task(30, null);
         Task optional = task(31, null);
         Task desk = task(32, null);
         Staff s1 = staff(1);
 
-        when(taskService.getBlockTask()).thenReturn(block);
+        when(taskService.getOffsiteTask()).thenReturn(offsite);
         when(taskService.getOptionalTask()).thenReturn(optional);
 
         List<ScheduleAssignment> assignments = List.of(
@@ -395,18 +419,18 @@ class PolicyServiceTest {
     }
 
     @Test
-    void meetPolicy6IgnoresOptionalRequirementWhenStaffHasBlockTask() {
-        Task block = task(30, null);
+    void meetPolicy6IgnoresOptionalRequirementWhenStaffHasOffsiteTask() {
+        Task offsite = task(30, null);
         Task optional = task(31, null);
         Task desk = task(32, null);
         Staff s1 = staff(1);
 
-        when(taskService.getBlockTask()).thenReturn(block);
+        when(taskService.getOffsiteTask()).thenReturn(offsite);
         when(taskService.getOptionalTask()).thenReturn(optional);
 
         List<ScheduleAssignment> assignments = List.of(
             assignment(s1, desk, 9, 0),
-            assignment(s1, block, 10, 0)
+            assignment(s1, offsite, 10, 0)
         );
 
         assertDoesNotThrow(() -> policyService.checkPolicy_6(assignments, List.of(6L)));
@@ -435,4 +459,3 @@ class PolicyServiceTest {
         return assignment;
     }
 }
-

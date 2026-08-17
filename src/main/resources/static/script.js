@@ -1337,7 +1337,7 @@ function createTaskDropdown(rowIndex, colIndex, selectedTask) {
 
     const isFivePmSlot = timeSlots[rowIndex] === "5:00 PM";
     const allowedTasks = isFivePmSlot
-        ? ["Closing-15mins", "Block"]
+        ? ["Closing-15mins", "Off-site"]
         : taskNames;
 
     const safeSelectedTask = allowedTasks.includes(selectedTask)

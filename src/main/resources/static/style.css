@@ -521,6 +521,7 @@ th {
 .offsite,
 .task-select.offsite {
     background: var(--offsite);
+    color: #ffffff;
 }
 
 .daily-tasks {

@@ -256,11 +256,11 @@ public class AutoService {
 
     // 3.5.3 Implementation of isPartTime()
     private boolean isPartTime(AutoData data, Staff staff) {
-        Task block = taskService.getBlockTask();
+        Task offsite = taskService.getOffsiteTask();
         return data.assignments.stream()
-            .anyMatch(a -> a.getTask().equals(block)
+            .anyMatch(a -> a.getTask().equals(offsite)
                 && a.getStaff().equals(staff)
-                && a.getTimeSlot().isBefore(WORK_END)); // Check if the staff member has a Block task before the last hour of work
+                && a.getTimeSlot().isBefore(WORK_END)); // Check if the staff member has an Off-site task before the last hour of work
     }
 
     //3.5.4 Implementation of hasTwoOptionalTimeSlot()

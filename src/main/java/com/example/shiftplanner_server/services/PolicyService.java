@@ -65,11 +65,7 @@ public class PolicyService {
 //        List<Integer> staffIds = scheduleAssignmentService.getDistinctStaffs(assignments);
         int requiredStaff = policyRepository.findById(1).orElseThrow().getParam1();
         Task lunchTask = taskService.getLunchTask();
-        Task blockTask = taskService.getBlockTask();
-//        if (!(staffIds.size() >= requiredStaff)) {
-//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(ERROR_FORMAT_1, "1",
-//                "Need at least " + requiredStaff + " staff members"));
-//        }
+        Task offsiteTask = taskService.getOffsiteTask();
 
         assignments.stream()
             .collect(Collectors.groupingBy(ScheduleAssignment::getTimeSlot))
@@ -77,7 +73,7 @@ public class PolicyService {
                 if (!timeSlot.isBefore(LUNCH_START) && timeSlot.isBefore(LUNCH_END)) {
                     long count = ssa.stream()
                         .filter(sa -> !lunchTask.equals(sa.getTask())
-                            && !blockTask.equals(sa.getTask()))
+                            && !offsiteTask.equals(sa.getTask()))
                         .count();
                     boolean hasEnoughStaffs = count >= requiredStaff;
 
@@ -244,7 +240,7 @@ public class PolicyService {
 
     /**
      * Check with Policy 6:
-     * Staff members working an eight-hour shift (no Block) must be allocated at least one Optional (unassigned) time slot during the day.
+     * Staff members working an eight-hour shift (no Off-site) must be allocated at least one Optional (unassigned) time slot during the day.
      *
      * @param assignments assignments to be checked.
      * @param policyIds   list of policy IDs to be checked.
@@ -255,16 +251,16 @@ public class PolicyService {
             return; // Policy 6 is not applicable
         }
 
-        Task block = taskService.getBlockTask();
+        Task offsite = taskService.getOffsiteTask();
         Task optional = taskService.getOptionalTask();
 
         assignments.stream()
             .collect(Collectors.groupingBy(ScheduleAssignment::getStaff))
             .forEach((staff, ssa) -> {
-                boolean hasBlock = ssa.stream()
-                    .anyMatch(sa -> block.equals(sa.getTask()) && sa.getTimeSlot().isBefore(WORK_END));
+                boolean hasOffsite = ssa.stream()
+                    .anyMatch(sa -> offsite.equals(sa.getTask()) && sa.getTimeSlot().isBefore(WORK_END));
 
-                if (!hasBlock) {
+                if (!hasOffsite) {
                     boolean hasOptionalSlot = ssa.stream().anyMatch(sa -> optional.equals(sa.getTask()));
 
                     if (!hasOptionalSlot) {

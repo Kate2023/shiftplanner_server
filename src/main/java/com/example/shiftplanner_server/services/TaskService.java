@@ -30,6 +30,7 @@ public class TaskService {
     private Task ROAMING_TASK;
     private Task SHELVING_TASK;
     private Task LUNCH_TASK;
+    private Task OFFSITE_TASK;
 
     public List<Task> getAll() {
         return taskRepository.findAll();
@@ -131,5 +132,15 @@ public class TaskService {
                 .orElseThrow(() -> new RuntimeException("Lunch task not found"));
         }
         return LUNCH_TASK;
+    }
+
+    public Task getOffsiteTask() {
+        if (OFFSITE_TASK == null) {
+            OFFSITE_TASK = getAll().stream()
+                .filter(task -> task.getTaskName().toLowerCase().contains("off-site"))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Off-site task not found"));
+        }
+        return OFFSITE_TASK;
     }
 }
