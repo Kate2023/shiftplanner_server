@@ -49,13 +49,14 @@ values ('Desk', '#4da3ff', false, false),
        ('Event Prep', '#8f7cff', false, false),
        ('Closing-15min', '#ff7b7b', false, false),
        ('Training', '#5f8bff', false, false),
-       ('Block', '#444444', true, false),
+       ('Block', '#dad8c9', false, false),
        ('Bell', '#ff8aa1', false, false),
        ('Roaming', '#6ed3ff', false, false),
        ('Lunch/Check-in', '#f7b267', true, false),
        ('Lunch/Bell', '#ffb3c7', true, false),
        ('Lunch/Roaming', '#8ee3ef', true, false),
-       ('Optional', '#c7d2e2', false, true);
+       ('Optional', '#c7d2e2', false, true),
+       ('Off-site', '#444444', true, false);
 
 -- Map lunch-combo tasks to the same alias as their base task
 UPDATE sp.tasks t

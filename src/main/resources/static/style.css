@@ -21,13 +21,14 @@
   --eventprep: #8f7cff;
   --closing: #ff7b7b;
   --training: #5f8bff;
-  --block: #444444;
+  --block: #dad8c9;
   --bell: #ff8aa1;
   --roaming: #6ed3ff;
   --lunchcheckin: #f7b267;
   --lunchbell: #ffb3c7;
   --lunchroaming: #8ee3ef;
   --optional: #c7d2e2;
+  --offsite: #444444;
 }
 
 * {
@@ -484,7 +485,7 @@ th {
 .block,
 .task-select.block {
   background: var(--block);
-  color: #ffffff;
+
 }
 
 .bell,
@@ -515,6 +516,11 @@ th {
 .optional,
 .task-select.optional {
   background: var(--optional);
+}
+
+.offsite,
+.task-select.offsite {
+    background: var(--offsite);
 }
 
 .daily-tasks {

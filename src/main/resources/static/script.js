@@ -12,13 +12,14 @@ const defaultTaskColors = {
     "Event Prep": "#8f7cff",
     "Closing-15mins": "#ff7b7b",
     "Training": "#5f8bff",
-    "Block": "#444444",
+    "Block": "#dad8c9",
     "Bell": "#ff8aa1",
     "Roaming": "#6ed3ff",
     "Lunch/Check-in": "#f7b267",
     "Lunch/Bell": "#ffb3c7",
     "Lunch/Roaming": "#8ee3ef",
-    "Optional": "#c7d2e2"
+    "Optional": "#c7d2e2",
+    "Off-site": "#444444"
 };
 
 const taskNames = [
@@ -38,7 +39,8 @@ const taskNames = [
     "Lunch/Check-in",
     "Lunch/Bell",
     "Lunch/Roaming",
-    "Optional"
+    "Optional",
+    "Off-site"
 ];
 
 const timeSlots = [
@@ -1129,6 +1131,7 @@ function applyTaskColors() {
     root.style.setProperty("--lunchbell", taskColors["Lunch/Bell"]);
     root.style.setProperty("--lunchroaming", taskColors["Lunch/Roaming"]);
     root.style.setProperty("--optional", taskColors["Optional"]);
+    root.style.setProperty("--offsite", taskColors["Off-site"]);
 }
 
 function refreshReviewBadges() {
@@ -1433,7 +1436,8 @@ const taskNameToApiTaskId = {
     "Lunch/Check-in": 14,
     "Lunch/Bell": 15,
     "Lunch/Roaming": 16,
-    "Optional": 17
+    "Optional": 17,
+    "Off-site": 18
 };
 
 function toApiTimeSlot(uiTimeSlot) {
