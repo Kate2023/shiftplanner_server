@@ -22,8 +22,6 @@ CREATE TABLE IF NOT EXISTS sp.users (
 CREATE TABLE IF NOT EXISTS sp.staff (
     staff_id                 INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     staff_name               VARCHAR(255) NOT NULL,
-    working_hours            NUMERIC(5,2) NOT NULL CHECK (working_hours >= 0),
-    lunch_break              NUMERIC(5,2) NOT NULL CHECK (lunch_break >= 0),
     is_active                BOOLEAN NOT NULL DEFAULT TRUE
 );
 

@@ -24,14 +24,14 @@ values ('Manager', '$2a$10$5B5abE.REDO6KmDqBr/w8O2OJaiZ8VVenmdc9VRXx8vexSP6pVCvm
 -- ('Senior Librarian', 'librarian2026', false);
 
 -- staffs
-insert into sp.staff(staff_name, working_hours, lunch_break, is_active)
-values ('Emma Li', 40, 60, true),
-       ('Noah Patel', 35, 60, true),
-       ('Olivia Chen', 30, 60, true),
-       ('Lucas Singh', 38, 60, true),
-       ('Ava Wilson', 40, 60, true),
-       ('Ethan Brown', 32, 60, true),
-       ('Sophia Kumar', 36, 60, true);
+insert into sp.staff(staff_name, is_active)
+values ('Emma Li', true),
+       ('Noah Patel',  true),
+       ('Olivia Chen', true),
+       ('Lucas Singh', true),
+       ('Ava Wilson', true),
+       ('Ethan Brown', true),
+       ('Sophia Kumar', true);
 
 -- schedules
 

@@ -57,10 +57,7 @@ class StaffControllerTest {
         when(staffService.create(any(StaffUpsertRequest.class))).thenReturn(sampleStaffList());
 
         StaffUpsertRequest request = new StaffUpsertRequest()
-            .name("Alex")
-            .title("Cashier")
-            .workingHours(38.5)
-            .lunchBreak(1.0);
+            .name("Alex");
 
         mockMvc.perform(post("/api/staff")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -77,10 +74,7 @@ class StaffControllerTest {
         when(staffService.update(eq(7), any(StaffUpsertRequest.class))).thenReturn(sampleStaffList());
 
         StaffUpsertRequest request = new StaffUpsertRequest()
-            .name("Alex")
-            .title("Cashier")
-            .workingHours(36.0)
-            .lunchBreak(0.5);
+            .name("Alex");
 
         mockMvc.perform(put("/api/staff/{staffId}", 7)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -105,10 +99,7 @@ class StaffControllerTest {
     private List<StaffParam> sampleStaffList() {
         return List.of(new StaffParam()
             .staffId(1L)
-            .name("Alex")
-            .title("Cashier")
-            .workingHours(38.5)
-            .lunchBreak(1.0));
+            .name("Alex"));
     }
 }
 

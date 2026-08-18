@@ -10,7 +10,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -88,8 +87,6 @@ class ScheduleRepositoryTest extends PostgresRepositoryTestBase {
     private Staff saveStaff(String name) {
         Staff staff = new Staff();
         staff.setStaffName(name);
-        staff.setWorkingHours(BigDecimal.valueOf(38));
-        staff.setLunchBreak(BigDecimal.valueOf(60));
         staff.setActive(true);
         return staffRepository.save(staff);
     }

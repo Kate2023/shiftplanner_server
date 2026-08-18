@@ -307,35 +307,19 @@ components:
           type: string
     StaffParam:
       type: object
-      required: [staffId, name, title, workingHours, lunchBreak]
+      required: [staffId, name]
       properties:
         staffId:
           type: integer
           format: int64
         name:
           type: string
-        title:
-          type: string
-        workingHours:
-          type: number
-          format: double
-        lunchBreak:
-          type: number
-          format: double
     StaffUpsertRequest:
       type: object
-      required: [name, title, workingHours, lunchBreak]
+      required: [name]
       properties:
         name:
           type: string
-        title:
-          type: string
-        workingHours:
-          type: number
-          format: double
-        lunchBreak:
-          type: number
-          format: double
     PolicyParam:
       type: object
       required: [policyId, description, param_1]

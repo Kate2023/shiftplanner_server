@@ -49,13 +49,13 @@ const timeSlots = [
 ];
 
 const defaultStaff = [
-    {id: 1, name: "Emma Li", title: "Senior Librarian"},
-    {id: 2, name: "Noah Patel", title: "Librarian"},
-    {id: 3, name: "Olivia Chen", title: "Library Assistant"},
-    {id: 4, name: "Lucas Singh", title: "Librarian"},
-    {id: 5, name: "Ava Wilson", title: "Librarian"},
-    {id: 6, name: "Ethan Brown", title: "Library Assistant"},
-    {id: 7, name: "Sophia Kumar", title: "Librarian"}
+    {id: 1, name: "Emma Li"},
+    {id: 2, name: "Noah Patel"},
+    {id: 3, name: "Olivia Chen"},
+    {id: 4, name: "Lucas Singh"},
+    {id: 5, name: "Ava Wilson"},
+    {id: 6, name: "Ethan Brown"},
+    {id: 7, name: "Sophia Kumar"}
 ];
 
 const defaultShiftDate = "2026-06-10";
@@ -527,8 +527,7 @@ function mapApiStaffToUi(staff) {
 
     return {
         id,
-        name: staff?.name || "",
-        title: staff?.title || ""
+        name: staff?.name || ""
     };
 }
 
@@ -675,11 +674,7 @@ async function saveStaff() {
     }
 
     const payload = {
-        name,
-        // Backend upsert model includes title, keep a default value when UI does not edit it.
-        title: "",
-        workingHours: 0,
-        lunchBreak: 0
+        name
     };
 
     try {

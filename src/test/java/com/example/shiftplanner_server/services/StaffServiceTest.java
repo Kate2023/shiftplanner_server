@@ -48,8 +48,6 @@ class StaffServiceTest {
         Staff staff = new Staff();
         staff.setStaffId(5);
         staff.setStaffName("Riley");
-        staff.setWorkingHours(BigDecimal.valueOf(37.5));
-        staff.setLunchBreak(BigDecimal.valueOf(1.0));
         staff.setActive(true);
 
         when(staffRepository.findAllByActiveTrue()).thenReturn(List.of(staff));
@@ -57,26 +55,18 @@ class StaffServiceTest {
         List<StaffParam> result = staffService.getAll();
 
         assertEquals(1, result.size());
-        assertEquals(5L, result.get(0).getStaffId());
-        assertEquals("Riley", result.get(0).getName());
-        assertEquals("", result.get(0).getTitle());
-        assertEquals(37.5, result.get(0).getWorkingHours());
-        assertEquals(1.0, result.get(0).getLunchBreak());
+        assertEquals(5L, result.getFirst().getStaffId());
+        assertEquals("Riley", result.getFirst().getName());
     }
 
     @Test
     void createSavesMappedStaffAndReturnsCurrentActiveStaff() {
         StaffUpsertRequest request = new StaffUpsertRequest()
-            .name("Alex")
-            .title("Cashier")
-            .workingHours(null)
-            .lunchBreak(0.5);
+            .name("Alex");
 
         Staff active = new Staff();
         active.setStaffId(1);
         active.setStaffName("Alex");
-        active.setWorkingHours(BigDecimal.ZERO);
-        active.setLunchBreak(BigDecimal.valueOf(0.5));
         active.setActive(true);
 
         when(staffRepository.findAllByActiveTrue()).thenReturn(List.of(active));
@@ -88,12 +78,10 @@ class StaffServiceTest {
         Staff saved = staffCaptor.getValue();
 
         assertEquals("Alex", saved.getStaffName());
-        assertEquals(BigDecimal.ZERO, saved.getWorkingHours());
-        assertEquals(BigDecimal.valueOf(0.5), saved.getLunchBreak());
         assertTrue(saved.isActive());
 
         assertEquals(1, result.size());
-        assertEquals("Alex", result.get(0).getName());
+        assertEquals("Alex", result.getFirst().getName());
     }
 
     @Test
@@ -101,15 +89,10 @@ class StaffServiceTest {
         Staff existing = new Staff();
         existing.setStaffId(10);
         existing.setStaffName("Before");
-        existing.setWorkingHours(BigDecimal.TEN);
-        existing.setLunchBreak(BigDecimal.ONE);
         existing.setActive(false);
 
         StaffUpsertRequest request = new StaffUpsertRequest()
-            .name("After")
-            .title("Supervisor")
-            .workingHours(40.0)
-            .lunchBreak(null);
+            .name("After");
 
         when(staffRepository.getReferenceById(10)).thenReturn(existing);
         when(staffRepository.findAllByActiveTrue()).thenReturn(List.of(existing));
@@ -118,12 +101,10 @@ class StaffServiceTest {
         List<StaffParam> result = staffService.update(10, request);
 
         assertEquals("After", existing.getStaffName());
-        assertEquals(BigDecimal.valueOf(40.0), existing.getWorkingHours());
-        assertEquals(BigDecimal.ZERO, existing.getLunchBreak());
         assertTrue(existing.isActive());
         verify(staffRepository).save(existing);
         assertEquals(1, result.size());
-        assertEquals("After", result.get(0).getName());
+        assertEquals("After", result.getFirst().getName());
     }
 
     @Test

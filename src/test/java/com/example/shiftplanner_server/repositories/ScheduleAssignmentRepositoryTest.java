@@ -13,7 +13,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -107,8 +106,6 @@ class ScheduleAssignmentRepositoryTest extends PostgresRepositoryTestBase {
     private ScheduleAssignment buildAssignment(LocalDate date, String taskName, LocalTime slot) {
         Staff staff = new Staff();
         staff.setStaffName("Staff " + taskName + " " + slot);
-        staff.setWorkingHours(BigDecimal.valueOf(35));
-        staff.setLunchBreak(BigDecimal.valueOf(60));
         staff.setActive(true);
         Staff savedStaff = staffRepository.save(staff);
 

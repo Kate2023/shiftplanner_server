@@ -40,8 +40,6 @@ class StaffRepositoryTest extends PostgresRepositoryTestBase {
     void saveAndFindById() {
         Staff staff = new Staff();
         staff.setStaffName("Alex");
-        staff.setWorkingHours(BigDecimal.valueOf(38));
-        staff.setLunchBreak(BigDecimal.valueOf(60));
         staff.setActive(true);
 
         Staff saved = staffRepository.save(staff);
@@ -53,14 +51,10 @@ class StaffRepositoryTest extends PostgresRepositoryTestBase {
     void findAllByActiveTrueReturnsOnlyActiveStaff() {
         Staff active = new Staff();
         active.setStaffName("Active Staff");
-        active.setWorkingHours(BigDecimal.valueOf(40));
-        active.setLunchBreak(BigDecimal.valueOf(60));
         active.setActive(true);
 
         Staff inactive = new Staff();
         inactive.setStaffName("Inactive Staff");
-        inactive.setWorkingHours(BigDecimal.valueOf(35));
-        inactive.setLunchBreak(BigDecimal.valueOf(60));
         inactive.setActive(false);
 
         staffRepository.save(active);
@@ -69,15 +63,13 @@ class StaffRepositoryTest extends PostgresRepositoryTestBase {
         List<Staff> activeOnly = staffRepository.findAllByActiveTrue();
 
         assertEquals(1, activeOnly.size());
-        assertEquals("Active Staff", activeOnly.get(0).getStaffName());
+        assertEquals("Active Staff", activeOnly.getFirst().getStaffName());
     }
 
     @Test
     void deleteByIdRemovesStaff() {
         Staff staff = new Staff();
         staff.setStaffName("Delete Staff");
-        staff.setWorkingHours(BigDecimal.valueOf(30));
-        staff.setLunchBreak(BigDecimal.valueOf(45));
         staff.setActive(true);
 
         Staff saved = staffRepository.save(staff);
