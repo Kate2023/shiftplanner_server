@@ -85,5 +85,14 @@ Open a new PowerShell or Command Prompt window and run:
 gradle -v
 ```
 
-If successful, the terminal shows the installed Gradle version and local environment details.
+### PostgreSQL
 
+-- Setup PostgreSQL database for the shift planner application
+```text
+docker run --name dev-postgres --restart always -e POSTGRES_USER=sp_user -e POSTGRES_PASSWORD=secure_app_password -e POSTGRES_DB=shiftplanner -p 5433:5432 -d postgres:18.4
+```
+
+-- Teardown PostgreSQL database for the shift planner application
+```text
+docker rm -f dev-postgres
+```

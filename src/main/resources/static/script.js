@@ -868,7 +868,7 @@ function setAutoRuleConfirmLoadingState(isLoading) {
 
 function buildAutoRuleLabelText(policy) {
     const fallbackLabel = `Rule ${policy.policyId}`;
-    const description = (policy.description.replace("{3}", policy.param1) || "").trim();
+    const description = (policy.description.replace("{1}", policy.param1) || "").trim();
     return description ? `${fallbackLabel}: ${description}` : fallbackLabel;
 }
 

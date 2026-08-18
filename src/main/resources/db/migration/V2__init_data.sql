@@ -1,7 +1,7 @@
 -- Test Data
 
 -- policies
-insert into sp.policies(description, param_1)
+insert into policies(description, param_1)
 values ('Excluding staff who are on their lunch break, there must be at least {1} staff members present in the library at all times.',
         3),
        ('Between 12:00 p.m. and 2:00 p.m., every staff member must be allocated one of the four tasks: lunch break, lunch/ check-in, lunch/bell or lunch/roaming.',
@@ -17,16 +17,16 @@ values ('Excluding staff who are on their lunch break, there must be at least {1
         null);
 
 -- users
-insert into sp.users(username, password, is_manager)
+insert into users(username, password, is_manager)
 values ('Manager', '$2a$10$5B5abE.REDO6KmDqBr/w8O2OJaiZ8VVenmdc9VRXx8vexSP6pVCvm', true),
        ('Senior Librarian', '$2a$10$7cgpbFYv5wq9FZUBsWx8D.0iHU0c.B0P96CrcsO9cFUEcA8XHYnmO', false);
 -- ('Manager', 'manager2026', true),
 -- ('Senior Librarian', 'librarian2026', false);
 
 -- staffs
-insert into sp.staff(staff_name, is_active)
+insert into staff(staff_name, is_active)
 values ('Emma Li', true),
-       ('Noah Patel',  true),
+       ('Noah Patel', true),
        ('Olivia Chen', true),
        ('Lucas Singh', true),
        ('Ava Wilson', true),
@@ -38,7 +38,7 @@ values ('Emma Li', true),
 -- schedule_assignments
 
 -- tasks
-insert into sp.tasks (task_name, colour, is_lunch, is_auto)
+insert into tasks (task_name, colour, is_lunch, is_auto)
 values ('Desk', '#4da3ff', false, false),
        ('Check-in', '#f4c542', false, false),
        ('Picking', '#4ecb71', false, false),
@@ -59,17 +59,17 @@ values ('Desk', '#4da3ff', false, false),
        ('Off-site', '#444444', true, false);
 
 -- Map lunch-combo tasks to the same alias as their base task
-UPDATE sp.tasks t
+UPDATE tasks t
 SET task_alias = CASE t.task_name
                      WHEN 'Check-in' THEN lc.task_id
                      WHEN 'Lunch/Check-in' THEN c.task_id
                      WHEN 'Roaming' THEN lr.task_id
                      WHEN 'Lunch/Roaming' THEN r.task_id
     END
-FROM (SELECT task_id FROM sp.tasks WHERE task_name = 'Check-in') c,
-     (SELECT task_id FROM sp.tasks WHERE task_name = 'Lunch/Check-in') lc,
-     (SELECT task_id FROM sp.tasks WHERE task_name = 'Roaming') r,
-     (SELECT task_id FROM sp.tasks WHERE task_name = 'Lunch/Roaming') lr
+FROM (SELECT task_id FROM tasks WHERE task_name = 'Check-in') c,
+     (SELECT task_id FROM tasks WHERE task_name = 'Lunch/Check-in') lc,
+     (SELECT task_id FROM tasks WHERE task_name = 'Roaming') r,
+     (SELECT task_id FROM tasks WHERE task_name = 'Lunch/Roaming') lr
 WHERE t.task_name IN (
                       'Check-in', 'Lunch/Check-in',
                       'Roaming', 'Lunch/Roaming'

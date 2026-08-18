@@ -54,7 +54,7 @@ class ScheduleAssignmentServiceTest {
         List<ScheduleAssignment> result = scheduleAssignmentService.saveToDate(date, input);
 
         assertEquals(1, result.size());
-        assertEquals(assignment, result.get(0));
+        assertEquals(assignment, result.getFirst());
         InOrder inOrder = inOrder(scheduleAssignmentRepository);
         inOrder.verify(scheduleAssignmentRepository).deleteAllBySchedule_Date(date);
         inOrder.verify(scheduleAssignmentRepository).saveAll(input);
