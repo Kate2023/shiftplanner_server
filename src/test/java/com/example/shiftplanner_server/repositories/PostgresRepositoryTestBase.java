@@ -1,12 +1,13 @@
 package com.example.shiftplanner_server.repositories;
 
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -19,9 +20,16 @@ public abstract class PostgresRepositoryTestBase {
 
         String script;
         try {
-            script = Files.readString(Path.of("database", "table.sql"));
+            ClassPathResource resource = new ClassPathResource("db/migration/V1__init_tables.sql");
+            if (!resource.exists()) {
+                resource = new ClassPathResource("database/table.sql");
+            }
+
+            try (InputStream inputStream = resource.getInputStream()) {
+                script = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            }
         } catch (IOException ex) {
-            throw new IllegalStateException("Unable to read database/table.sql", ex);
+            throw new IllegalStateException("Unable to read the SQL schema script for test setup", ex);
         }
 
         StringBuilder cleanedScript = new StringBuilder();

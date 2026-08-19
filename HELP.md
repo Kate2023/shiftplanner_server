@@ -96,3 +96,20 @@ docker run --name dev-postgres --restart always -e POSTGRES_USER=sp_user -e POST
 ```text
 docker rm -f dev-postgres
 ```
+
+### Build Docker Image
+
+```powershell
+./gradlew jibDockerBuild
+```
+
+
+### Run the Application
+
+```powershell
+docker run --name shiftplanner -d -p 8089:8088 --restart unless-stopped --link dev-postgres -e SPRING_DATASOURCE_URL=jdbc:postgresql://dev-postgres:5432/shiftplanner -e SPRING_DATASOURCE_USERNAME=sp_user -e SPRING_DATASOURCE_PASSWORD=secure_app_password shiftplanner_server:latest
+```
+
+
+
+
