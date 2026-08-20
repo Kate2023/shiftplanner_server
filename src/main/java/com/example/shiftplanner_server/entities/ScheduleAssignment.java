@@ -10,7 +10,6 @@ import java.time.LocalTime;
 @Entity
 @Table(
     name = "schedule_assignments",
-    schema = "sp",
     uniqueConstraints = {
         @UniqueConstraint(name = "uq_assignment_staff_slot", columnNames = {"schedule_id", "staff_id", "time_slot"})
     }
