@@ -7,11 +7,13 @@ import com.example.shiftplanner_server.model.PolicyParam;
 import com.example.shiftplanner_server.model.PolicyUpdateRequest;
 import com.example.shiftplanner_server.repositories.PolicyRepository;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,6 +23,8 @@ import static com.example.shiftplanner_server.services.ServiceConstant.*;
 @Service
 @RequiredArgsConstructor
 public class PolicyService {
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("h:mm a");
+
     private final PolicyRepository policyRepository;
     private final ScheduleAssignmentService scheduleAssignmentService;
     private final TaskService taskService;
@@ -79,10 +83,14 @@ public class PolicyService {
 
                     if (!hasEnoughStaffs) {
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            String.format(ERROR_FORMAT_1, "1", "Need at least " + requiredStaff + " staff members at " + timeSlot));
+                            String.format(ERROR_FORMAT_1, "1", "Need at least " + requiredStaff + " staff members at " + getFormat(timeSlot)));
                     }
                 }
             });
+    }
+
+    private @NonNull String getFormat(LocalTime timeSlot) {
+        return timeSlot.format(formatter);
     }
 
     /**
@@ -193,8 +201,8 @@ public class PolicyService {
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                             String.format(ERROR_FORMAT_1, "4",
                                 current.getStaff().getStaffName() + ". Consecutive tasks:\n"
-                                    + current.getTimeSlot() + " " + currentTask.getTaskName() + "\n"
-                                    + next.getTimeSlot() + " " + nextTask.getTaskName()));
+                                    + current.getTimeSlot().format(formatter) + " " + currentTask.getTaskName() + "\n"
+                                    + next.getTimeSlot().format(formatter) + " " + nextTask.getTaskName()));
                     }
                 }
             });
@@ -223,7 +231,7 @@ public class PolicyService {
                 int count = (int) sat.stream().filter(sa -> desk.equals(sa.getTask())).count();
                 if (count > 2) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        String.format(ERROR_FORMAT_1, "5", timeSlot + " " + count + " people at Service Desk"));
+                        String.format(ERROR_FORMAT_1, "5", timeSlot.format(formatter) + " " + count + " people at Service Desk"));
                 }
 
                 count = (int) sat.stream()
@@ -233,7 +241,7 @@ public class PolicyService {
                     .count();
                 if (checkin != null && count > 2) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        String.format(ERROR_FORMAT_1, "5", timeSlot + " " + count + " people at Check-in"));
+                        String.format(ERROR_FORMAT_1, "5", timeSlot.format(formatter) + " " + count + " people at Check-in"));
                 }
             });
     }
