@@ -3,7 +3,7 @@ const MINIMUM_STAFF_POLICY_ID = 1;
 
 const defaultTaskColors = {
     "Desk": "#4da3ff",
-    "Check-in": "#f4c542",
+    "Check-in": "#ff7f50",
     "Picking": "#4ecb71",
     "Shelving": "#d96df0",
     "Meeting": "#ff9f68",
@@ -1592,7 +1592,7 @@ async function saveShiftToSelectedDate() {
 
     try {
         await saveScheduleToApi(saveToDateInput.value);
-        alert(`Shift saved to ${saveToDateInput.value}.`);
+        reviewSchedule();
     } catch (error) {
         console.error("Unable to save shift via API.", error);
         alert(error?.message || `Failed to save shift to ${saveToDateInput.value}.`);

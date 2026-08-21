@@ -17,7 +17,6 @@
     </div>
     <div class="nav">
       <button type="button" onclick="resetShift()">Reset</button>
-      <button type="button" onclick="reviewSchedule()">Review</button>
       <button type="button" onclick="logout()">Logout</button>
     </div>
   </div>
@@ -30,7 +29,7 @@
      <div class="schedule-actions-group">
       <button type="button" class="btn" onclick="openAutoScheduleRulePopup()">Auto Completion</button>
       <div class="save-to-wrap">
-      <button type="button" class="btn" onclick="openSaveToDatePicker()">Save to</button>
+      <button type="button" class="btn" onclick="openSaveToDatePicker()">Save & Review</button>
       <input
         type="date"
         id="saveToDate"
@@ -72,22 +71,18 @@
 
       <div class="daily-tasks">
         <div class="mini-card">
-          <h4>Roster</h4>
           <label for="dutyRoster">Roster</label>
           <select id="dutyRoster" onchange="saveDailyAssignments()"></select>
         </div>
         <div class="mini-card">
-          <h4>Banking</h4>
           <label for="dutyBanking">Banking</label>
           <select id="dutyBanking" onchange="saveDailyAssignments()"></select>
         </div>
         <div class="mini-card">
-          <h4>Banking Backup</h4>
           <label for="dutyBankingBackup">Banking Backup</label>
           <select id="dutyBankingBackup" onchange="saveDailyAssignments()"></select>
         </div>
         <div class="mini-card">
-          <h4>Daily Building Inspection</h4>
           <label for="dutyInspection">Daily Building Inspection</label>
           <select id="dutyInspection" onchange="saveDailyAssignments()"></select>
         </div>
