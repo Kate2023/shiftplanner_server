@@ -40,9 +40,10 @@ public class AutoData {
         if (policyIds.contains(7L)) {
             this.stages.add(new Stage(7L, checkInTask, 1, false, new ArrayDeque<>(), WORK_START, null)); // Policy 7: at least 1 check-in per hour
         }
-        if (policyIds.contains(5L)) {
-            this.stages.add(new Stage(5L, checkInTask, 2, false, new ArrayDeque<>(), WORK_START, null)); // Policy 5: at most 2 check-in
-        }
+        // Disable this stage for now, as it is not needed for the current implementation
+//        if (policyIds.contains(5L)) {
+//            this.stages.add(new Stage(5L, checkInTask, 2, false, new ArrayDeque<>(), WORK_START, null)); // Policy 5: at most 2 check-in
+//        }
 
         this.stage = 0;
     }

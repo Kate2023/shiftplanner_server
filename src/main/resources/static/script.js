@@ -173,6 +173,10 @@ function initializeStorage() {
     if (!localStorage.getItem("shiftPlannerDynamicStaffIds")) {
         localStorage.setItem("shiftPlannerDynamicStaffIds", JSON.stringify([]));
     }
+
+    if (!localStorage.getItem("shiftPlannerNotes")) {
+        localStorage.setItem("shiftPlannerNotes", "");
+    }
 }
 
 function setRole(role) {
@@ -383,6 +387,7 @@ function mapApiScheduleToLocalState(apiSchedule) {
         bankingBackup: toStaffName(apiSchedule?.backupStaffId),
         inspection: toStaffName(apiSchedule?.inspectionStaffId)
     }));
+    localStorage.setItem("shiftPlannerNotes", apiSchedule?.notes || "");
 }
 
 async function fetchScheduleByDate(date) {
@@ -401,6 +406,7 @@ function resetToStarterSchedule() {
     localStorage.removeItem("shiftPlannerDynamicStaffIds");
     localStorage.removeItem("shiftPlannerSchedule");
     localStorage.removeItem("shiftPlannerDailyAssignments");
+    localStorage.removeItem("shiftPlannerNotes");
 
     const firstStaffId = Number(getStaff()?.[0]?.id);
     if (Number.isFinite(firstStaffId)) {
@@ -1254,6 +1260,7 @@ function rescheduleShift() {
     saveSchedule(newSchedule);
     buildVisibleCalendars();
     populateDutyDropdowns();
+    localStorage.setItem("shiftPlannerNotes", "");
 }
 
 function resetShift() {
@@ -1650,16 +1657,15 @@ function setupReviewPageButtons() {
 
 /* ---------------- NOTES ---------------- */
 
-function saveNotes(elementId, storageKey) {
+function saveNotes(elementId) {
     const value = document.getElementById(elementId)?.value || "";
-    localStorage.setItem(storageKey, value);
-
+    localStorage.setItem("shiftPlannerNotes", value);
 }
 
-function loadNotes(elementId, storageKey) {
+function loadNotes(elementId) {
     const el = document.getElementById(elementId);
     if (el) {
-        el.value = localStorage.getItem(storageKey) || "";
+        el.value = localStorage.getItem("shiftPlannerNotes") || "";
     }
 }
 
