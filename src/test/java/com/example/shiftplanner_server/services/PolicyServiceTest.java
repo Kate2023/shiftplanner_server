@@ -192,11 +192,13 @@ class PolicyServiceTest {
     @Test
     void meetPolicy2ReturnsTrueWhenEachStaffHasAtLeastOneLunchAssignmentInWindow() {
         Task lunch = task(1, null);
-        Task nonLunch = task(2, null);
+        Task offsite = task(2, null);
+        Task nonLunch = task(3, null);
         Staff staffA = staff(100);
         Staff staffB = staff(101);
 
         when(taskService.getLunchTasks()).thenReturn(List.of(lunch));
+        when(taskService.getOffsiteTask()).thenReturn(offsite);
 
         List<ScheduleAssignment> assignments = List.of(
             assignment(staffA, nonLunch, 12, 30),
@@ -210,11 +212,13 @@ class PolicyServiceTest {
     @Test
     void meetPolicy2ReturnsFalseWhenAStaffMemberHasNoLunchAssignmentInWindow() {
         Task lunch = task(1, null);
-        Task nonLunch = task(2, null);
+        Task offsite = task(2, null);
+        Task nonLunch = task(3, null);
         Staff staffA = staff(100);
         Staff staffB = staff(101);
 
         when(taskService.getLunchTasks()).thenReturn(List.of(lunch));
+        when(taskService.getOffsiteTask()).thenReturn(offsite);
 
         List<ScheduleAssignment> assignments = List.of(
             assignment(staffA, lunch, 12, 30),
@@ -223,6 +227,26 @@ class PolicyServiceTest {
 
         assertThrows(ResponseStatusException.class,
             () -> policyService.checkPolicy_2(assignments, List.of(2L)));
+    }
+
+    @Test
+    void meetPolicy2ReturnsTrueWhenAStaffMemberIsOffsiteDuringLunchWindow() {
+        Task lunch = task(1, null);
+        Task offsite = task(2, null);
+        Task nonLunch = task(3, null);
+        Staff staffA = staff(100);
+        Staff staffB = staff(101);
+
+        when(taskService.getLunchTasks()).thenReturn(List.of(lunch));
+        when(taskService.getOffsiteTask()).thenReturn(offsite);
+
+        List<ScheduleAssignment> assignments = List.of(
+            assignment(staffA, offsite, 13, 0),
+            assignment(staffB, lunch, 13, 30),
+            assignment(staffA, nonLunch, 14, 0)
+        );
+
+        assertDoesNotThrow(() -> policyService.checkPolicy_2(assignments, List.of(2L)));
     }
 
     @Test

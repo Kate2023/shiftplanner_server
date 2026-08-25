@@ -107,22 +107,47 @@ public class PolicyService {
             return; // Policy 2 is not applicable
         }
         List<Task> lunches = taskService.getLunchTasks();
+        Task offsiteTask = taskService.getOffsiteTask();
 
+        // Group assignments by Staff and check if each staff has one and only one lunch task assigned during the lunch period
         assignments.stream()
             .collect(Collectors.groupingBy(ScheduleAssignment::getStaff))
             .forEach((staff, ssa) -> {
-                boolean hasLunch = ssa.stream().anyMatch(sa ->
+                long lunchCount = ssa.stream().filter(sa ->
+                    lunches.contains(sa.getTask()) &&
+                        (sa.getTimeSlot().isBefore(LUNCH_START)
+                        || !sa.getTimeSlot().isBefore(LUNCH_END))
+                ).count();
+                if (lunchCount > 0) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format(ERROR_FORMAT_1, "2", staff.getStaffName() + " will have lunch outside of the lunch period"));
+                }
+
+                lunchCount = ssa.stream().filter(sa ->
                     !sa.getTimeSlot().isBefore(LUNCH_START)
                         && sa.getTimeSlot().isBefore(LUNCH_END)
                         && lunches.contains(sa.getTask())
-                );
+                ).count();
 
-                if (!hasLunch) {
+                if (lunchCount == 1) {
+                    // Staff has exactly one lunch task assigned, which is valid
+                    return;
+                } else if (lunchCount > 1) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format(ERROR_FORMAT_1, "2", staff.getStaffName() + " has more than one lunch tasks"));
+                }
+
+                lunchCount = ssa.stream().filter(sa ->
+                    !sa.getTimeSlot().isBefore(LUNCH_START)
+                        && sa.getTimeSlot().isBefore(LUNCH_END)
+                        && offsiteTask.equals(sa.getTask())
+                ).count();
+
+                if (lunchCount == 0) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         String.format(ERROR_FORMAT_1, "2", staff.getStaffName() + " needs to have Lunch"));
                 }
             });
-
     }
 
     /**

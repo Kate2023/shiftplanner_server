@@ -439,6 +439,10 @@ async function loadShiftDatePicker() {
     buildVisibleCalendars();
     loadNotes("shiftNotes");
     populateDutyDropdowns();
+
+    if (shiftDateInput) {
+        shiftDateInput.value = "";
+    }
 }
 
 function loadReviewDatePicker() {
@@ -485,8 +489,6 @@ async function loadShiftDate() {
     buildVisibleCalendars();
     loadNotes("shiftNotes");
     populateDutyDropdowns();
-
-    shiftDateInput.value="";
 }
 
 async function loadReviewScheduleByPickedDate(showAlertOnError = true) {

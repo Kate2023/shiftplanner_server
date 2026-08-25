@@ -3,7 +3,7 @@
 -- policies
 insert into policies(description, param_1)
 values ('Excluding staff who are on their lunch break, there must be at least {1} staff members present in the library at all times.',
-        3),
+        2),
        ('Between 12:00 p.m. and 2:00 p.m., every staff member must be allocated one of the four tasks: lunch break, lunch/ check-in, lunch/bell or lunch/roaming.',
         null),
        ('At least one staff member must be assigned to the service desk during every hourly time slot.', null),
@@ -56,7 +56,7 @@ values ('Desk', '#4da3ff', false, false),
        ('Lunch/Bell', '#ffb3c7', true, false),
        ('Lunch/Roaming', '#8ee3ef', true, false),
        ('Optional', '#c7d2e2', false, true),
-       ('Off-site', '#444444', true, false);
+       ('Off-site', '#444444', false, false);
 
 -- Map lunch-combo tasks to the same alias as their base task
 UPDATE tasks t
