@@ -4,32 +4,53 @@ Welcome to the README for the Shift Planner System.
 
 The Shift Planner System is a comprehensive solution designed to streamline the scheduling and management of employee shifts. This system provides an intuitive interface for both administrators and employees, allowing for efficient shift planning, tracking, and communication.
 
-## 📋 System Requirements
+## 📦 Included Artefacts
+
+The following artefacts are included in this submission and are required for the build, configuration, and execution of the Shift Planner System:
+
+- `src/` — application source code and resources, including:
+  - `src/main/java/` — Java server and application logic
+  - `src/main/resources/` — application configuration, static assets, and database runtime resources
+  - `src/test/java/` — automated test cases
+  - `src/test/resources/` — test configuration and fixtures
+- `build.gradle` and `settings.gradle` — Gradle build configuration and dependency management
+- `gradlew`, `gradlew.bat`, and `gradle/` — Gradle wrapper scripts and supporting files
+- `setup.sh` and `cleanup.sh` — environment setup and shutdown scripts
+- `README.md` and `HELP.md` — project documentation and usage instructions
+- `build/` — generated build artefacts, reports, compiled classes, and Jib image metadata
+- `.editorconfig`, `.gitattributes`, `.gitignore`, `.idea/`, `.gradle/`, and `shiftplanner_server.iml` — repository, IDE, and project metadata
+
+All artefacts listed above are included in the final submitted archive to ensure the complete project can be compiled and executed as provided.
+
+## 📋 System Requirements (Important)
+To successfully build and run the Shift Planner System, ensure your development environment meets the following requirements:
 *   **Java Development Kit (JDK)**: 21 (Specifically tested on 21.0.11)
-*   **Gradle Wrapper**: 9.6.1
-*   **Docker Desktop**: (Ensure the engine/daemon is actively running)
+*   **Gradle Wrapper**: 9.6.1 (Ensure you have the necessary permissions to run Gradle commands and build the project)
+*   **Docker Desktop**: (Ensure the engine/daemon is actively running, and you have sufficient permissions to execute Docker commands)
 *   **Web Browser**: Google Chrome (recommended) or any modern web browser
-*   **Development IDE**: IntelliJ IDEA (for source-code developers)
+*   **Development IDE**: IntelliJ IDEA (Optional, for source-code developers)
 *   **Operating System**: Windows 10 or later, macOS, or Linux
 *   **Network Ports**: Ensure local host ports **8089** (for Docker app mapping), **8088** (for local application runtime), and **5433** (for local PostgreSQL routing) are free.
-
+*   **Memory Requirements**: At least 16GB of RAM is recommended for running Docker containers and the application simultaneously.
 ---
 
-## 🛠️ Quick Start Guide (For QAs or Demo)
+## 🛠️ Quick Start Guide (For Build, Run a Demo or QA testing)
 
 Use this method to launch the entire environment instantly in containers without manually configuring compilation environments or IDE setups.
 
-1. Open your terminal (**Git Bash** on Windows, or your native **Terminal** on Linux/macOS).
-2. Navigate to the root directory of this project workspace.
-3. If you are on Linux or macOS, make the automation scripts executable:
+1. Check the above system requirements and ensure your environment is ready for Docker and Gradle operations.
+2. Open your terminal (**Git Bash** on Windows, or your native **Terminal** on Linux/macOS).
+3. Navigate to the root directory of this project workspace.
+4. If you are on Linux or macOS, make the automation scripts executable:
    ```bash
    chmod +x setup.sh cleanup.sh
    ```
-4. Run the master setup script to spin up the network, launch the database, compile with Google Jib, and boot the server container:
+5. Run the master setup script to spin up the network, launch the database, compile with Google Jib, and boot the server container:
    ```bash
    ./setup.sh
    ```
-5. Once the terminal displays the success banner, **Ctrl+Click** (or Cmd+Click) the link below to access your interface:
+6. If you see any errors, including missing JDK, Gradle, Docker, etc or face any permission errors, fix those issues and re-run the setup script. The script is idempotent and can be run multiple times without side effects.
+7. Once the terminal displays the success banner, **Ctrl+Click** (or Cmd+Click) the link below to access your interface:
    👉 **[http://localhost:8089/1.0/index.html](http://localhost:8089/1.0/index.html)**
 6. After you finish testing or reviewing the demo, cleanly tear down the container processes and internal Docker networks by running:
    ```bash
@@ -38,7 +59,7 @@ Use this method to launch the entire environment instantly in containers without
 
 ---
 
-## 🖥️ Local Development Setup (For Developers)
+## 🖥️ Local Development Setup (For Developers -- Optional. You can skip this if you only need to build and run the demo)
 
 Use these manual steps if you need to inspect code, run active debugging sessions, or make changes using IntelliJ IDEA.
 
